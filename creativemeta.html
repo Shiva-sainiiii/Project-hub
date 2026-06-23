@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinematic 3D Journey | Elite Portfolio</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Syncopate for that wide Awwwards typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Import Map for ES Modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+            "gsap": "https://esm.sh/gsap@3.12.4",
+            "gsap/ScrollTrigger": "https://esm.sh/gsap@3.12.4/ScrollTrigger",
+            "lenis": "https://esm.sh/@studio-freight/lenis@1.0.34"
+        }
+    }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Syncopate', sans-serif;
+            background: #050505;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism utility */
+       .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Hide scrollbar but keep scroll */
+        body {
+            scrollbar-width: none;
+        }
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Split text chars for stagger */
+       .char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(100%);
+        }
+
+        /* Canvas must be fixed background */
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            outline: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- WebGL Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- UI Overlay -->
+    <div class="relative z-10">
+        <!-- Navbar -->
+        <nav class="fixed top-0 left-0 w-full p-6 md:p-8 flex justify-between items-center glass">
+            <div class="text-sm md:text-base font-bold tracking-[0.3em] uppercase">ELITE.STUDIO</div>
+            <div class="hidden md:flex gap-8 text-xs tracking-[0.2em] opacity-60">
+                <a href="#section1" class="hover:opacity-100 transition-opacity">WORK</a>
+                <a href="#section2" class="hover:opacity-100 transition-opacity">ABOUT</a>
+                <a href="#section3" class="hover:opacity-100 transition-opacity">CONTACT</a>
+            </div>
+        </nav>
+
+        <!-- Side Stats -->
+        <div class="fixed left-6 md:left-8 top-1/2 -translate-y-1/2 glass p-4 rounded-lg text-xs tracking-widest opacity-40 hidden lg:block">
+            <div class="mb-4">01 — 03</div>
+            <div class="w-[1px] h-20 bg-white/20 mx-auto my-4"></div>
+            <div>SCROLL</div>
+        </div>
+
+        <!-- Sections for ScrollTrigger -->
+        <main>
+            <!-- Section 1 -->
+            <section id="section1" class="h-screen w-full flex flex-col justify-center items-center px-6 text-center">
+                <h1 class="text-4xl md:text-7xl lg:text-8xl font-bold uppercase tracking-[0.1em] leading-[0.9] split-text">
+                    CREATIVE<br>DIGITAL<br>EXPERIENCES
+                </h1>
+                <p class="mt-8 text-xs md:text-sm opacity-40 tracking-[0.3em] uppercase split-text">
+                    Pushing the boundaries of web
+                </p>
+            </section>
+
+            <!-- Section 2 -->
+            <section id="section2" class="h-screen w-full flex flex-col justify-center items-center px-6 text-center">
+                <h2 class="text-4xl md:text-7xl lg:text-8xl font-bold uppercase tracking-[0.1em] leading-[0.9] split-text">
+                    DISCOVER<br>YOUR<br>PATRONUS
+                </h2>
+                <p class="mt-8 text-xs md:text-sm opacity-40 tracking-[0.3em] uppercase split-text">
+                    Interactive identity systems
+                </p>
+            </section>
+
+            <!-- Section 3 -->
+            <section id="section3" class="h-screen w-full flex flex-col justify-center items-center px-6 text-center">
+                <h2 class="text-4xl md:text-7xl lg:text-8xl font-bold uppercase tracking-[0.1em] leading-[0.9] split-text">
+                    SUSTAINABLE<br>HORIZONS
+                </h2>
+                <p class="mt-8 text-xs md:text-sm opacity-40 tracking-[0.3em] uppercase split-text">
+                    Design for the future
+                </p>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="fixed bottom-0 left-0 w-full p-6 md:p-8 flex justify-between items-center text-xs opacity-30 tracking-[0.2em]">
+            <span>©2026</span>
+            <span>AWARDS.SITE</span>
+        </footer>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import gsap from 'gsap';
+        import { ScrollTrigger } from 'gsap/ScrollTrigger';
+        import Lenis from 'lenis';
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        // ============================================
+        // 1. SETUP: Scene, Camera, Renderer
+        // ============================================
+        const canvas = document.getElementById('webgl-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            antialias: true,
+            alpha: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // ============================================
+        // 2. LENIS SMOOTH SCROLL
+        // ============================================
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            smoothWheel: true
+        });
+
+        // Sync Lenis with GSAP ScrollTrigger
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time) => {
+            lenis.raf(time * 1000);
+        });
+        gsap.ticker.lagSmoothing(0);
+
+        // ============================================
+        // 3. PARTICLE SYSTEM + CUSTOM SHADERS
+        // ============================================
+        const PARTICLE_COUNT = window.innerWidth < 768? 15000 : 40000;
+
+        // Generate particle positions in a grid for morphing
+        const positions = new Float32Array(PARTICLE_COUNT * 3);
+        const scales = new Float32Array(PARTICLE_COUNT);
+        const randomness = new Float32Array(PARTICLE_COUNT * 3);
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const i3 = i * 3;
+            // Spread particles in a sphere
+            const radius = 5;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+
+            positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+            positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+            positions[i3 + 2] = radius * Math.cos(phi);
+
+            scales[i] = Math.random();
+
+            // Random offsets for noise
+            randomness[i3] = (Math.random() - 0.5) * 2;
+            randomness[i3 + 1] = (Math.random() - 0.5) * 2;
+            randomness[i3 + 2] = (Math.random() - 0.5) * 2;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
+        geometry.setAttribute('aRandomness', new THREE.BufferAttribute(randomness, 3));
+
+        // Custom GLSL Shaders
+        const vertexShader = `
+            uniform float uTime;
+            uniform float uMorph;
+            uniform vec2 uMouse;
+            uniform float uMouseStrength;
+
+            attribute float aScale;
+            attribute vec3 aRandomness;
+
+            varying vec3 vPosition;
+
+            // 3D Simplex Noise
+            vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+            vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+            float snoise(vec3 v) {
+                const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+                const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+                vec3 i = floor(v + dot(v, C.yyy));
+                vec3 x0 = v - i + dot(i, C.xxx);
+                vec3 g = step(x0.yzx, x0.xyz);
+                vec3 l = 1.0 - g;
+                vec3 i1 = min(g.xyz, l.zxy);
+                vec3 i2 = max(g.xyz, l.zxy);
+                vec3 x1 = x0 - i1 + C.xxx;
+                vec3 x2 = x0 - i2 + C.yyy;
+                vec3 x3 = x0 - D.yyy;
+                i = mod289(i);
+                vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+                float n_ = 0.142857142857;
+                vec3 ns = n_ * D.wyz - D.xzx;
+                vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+                vec4 x_ = floor(j * ns.z);
+                vec4 y_ = floor(j - 7.0 * x_);
+                vec4 x = x_ *ns.x + ns.yyyy;
+                vec4 y = y_ *ns.x + ns.yyyy;
+                vec4 h = 1.0 - abs(x) - abs(y);
+                vec4 b0 = vec4(x.xy, y.xy);
+                vec4 b1 = vec4(x.zw, y.zw);
+                vec4 s0 = floor(b0)*2.0 + 1.0;
+                vec4 s1 = floor(b1)*2.0 + 1.0;
+                vec4 sh = -step(h, vec4(0.0));
+                vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+                vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+                vec3 p0 = vec3(a0.xy, h.x);
+                vec3 p1 = vec3(a0.zw, h.y);
+                vec3 p2 = vec3(a1.xy, h.z);
+                vec3 p3 = vec3(a1.zw, h.w);
+                vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+                p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+                m = m * m;
+                return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+            }
+
+            void main() {
+                vPosition = position;
+                vec3 pos = position;
+
+                // Base noise animation - fluid wave
+                float noise1 = snoise(pos * 0.5 + uTime * 0.2);
+                float noise2 = snoise(pos * 0.8 - uTime * 0.1);
+                vec3 noisePos = pos + aRandomness * noise1 * 0.5;
+
+                // Morph 1: Flat wave -> uMorph 0 to 1
+                float wave = sin(pos.x * 2.0 + uTime) * cos(pos.z * 2.0 + uTime) * 0.5;
+                noisePos.y = mix(noisePos.y, wave, smoothstep(0.0, 1.0, uMorph));
+
+                // Morph 2: Vortex -> uMorph 1 to 2
+                float angle = atan(pos.z, pos.x) + uTime * 0.5;
+                float radius = length(pos.xz) * (1.0 - smoothstep(1.0, 2.0, uMorph) * 0.5);
+                vec3 vortexPos = vec3(cos(angle) * radius, pos.y * 2.0, sin(angle) * radius);
+                noisePos = mix(noisePos, vortexPos, smoothstep(1.0, 2.0, uMorph));
+
+                // Morph 3: Sphere -> uMorph 2 to 3
+                float sphereRadius = 3.0 + noise2 * 0.5;
+                vec3 spherePos = normalize(pos) * sphereRadius;
+                noisePos = mix(noisePos, spherePos, smoothstep(2.0, 3.0, uMorph));
+
+                // Mouse repel/gravity effect
+                vec4 modelPosition = modelMatrix * vec4(noisePos, 1.0);
+                vec4 viewPosition = viewMatrix * modelPosition;
+                vec4 projectedPosition = projectionMatrix * viewPosition;
+
+                vec2 mouseDistance = uMouse - projectedPosition.xy;
+                float mouseRadius = 0.3;
+                float mouseEffect = 1.0 - smoothstep(0.0, mouseRadius, length(mouseDistance));
+                noisePos.xy += mouseDistance * mouseEffect * uMouseStrength * 2.0;
+
+                gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(noisePos, 1.0);
+
+                // Point size attenuation
+                gl_PointSize = aScale * 3.0 * (1.0 / -viewPosition.z);
+                gl_PointSize *= (1.0 + mouseEffect * 2.0); // Grow near mouse
+            }
+        `;
+
+        const fragmentShader = `
+            uniform vec3 uColor1;
+            uniform vec3 uColor2;
+            varying vec3 vPosition;
+
+            void main() {
+                // Soft circular particles using distance from center
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if(dist > 0.5) discard;
+
+                // Soft edge falloff
+                float alpha = 1.0 - smoothstep(0.2, 0.5, dist);
+
+                // Color gradient based on position
+                vec3 color = mix(uColor1, uColor2, vPosition.y * 0.2 + 0.5);
+
+                gl_FragColor = vec4(color, alpha * 0.8);
+            }
+        `;
+
+        const material = new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+                uTime: { value: 0 },
+                uMorph: { value: 0 },
+                uMouse: { value: new THREE.Vector2(0, 0) },
+                uMouseStrength: { value: 0 },
+                uColor1: { value: new THREE.Color('#8B5CF6') }, // Purple
+                uColor2: { value: new THREE.Color('#06B6D4') } // Cyan
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // ============================================
+        // 4. MOUSE INTERACTION
+        // ============================================
+        const mouse = new THREE.Vector2();
+        const targetMouse = new THREE.Vector2();
+
+        window.addEventListener('mousemove', (event) => {
+            targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // ============================================
+        // 5. POST-PROCESSING: Bloom + Chromatic Aberration
+        // ============================================
+        const renderScene = new RenderPass(scene, camera);
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.2, // strength
+            0.1, // radius
+            0.2 // threshold
+        );
+
+        // Custom Chromatic Aberration Shader
+        const chromaticAberrationShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uOffset": { value: 0.0015 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float uOffset;
+                varying vec2 vUv;
+                void main() {
+                    vec4 cr = texture2D(tDiffuse, vUv + vec2(uOffset, 0.0));
+                    vec4 cg = texture2D(tDiffuse, vUv);
+                    vec4 cb = texture2D(tDiffuse, vUv - vec2(uOffset, 0.0));
+                    gl_FragColor = vec4(cr.r, cg.g, cb.b, cg.a);
+                }
+            `
+        };
+
+        const chromaticPass = new ShaderPass(chromaticAberrationShader);
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+        composer.addPass(chromaticPass);
+
+        // ============================================
+        // 6. GSAP SCROLL ANIMATIONS
+        // ============================================
+
+        // Split text animation
+        document.querySelectorAll('.split-text').forEach((text) => {
+            const chars = text.textContent.split('');
+            text.innerHTML = chars.map(char =>
+                char === ' '? ' ' : `<span class="char">${char}</span>`
+            ).join('');
+        });
+
+        // Animate each section
+        gsap.utils.toArray('section').forEach((section, i) => {
+            const chars = section.querySelectorAll('.char');
+
+            // Text reveal
+            gsap.to(chars, {
+                opacity: 1,
+                y: 0,
+                stagger: 0.02,
+                ease: 'power4.out',
+                scrollTrigger: {
+                    trigger: section,
+                    start: 'top 70%',
+                    toggleActions: 'play none none reverse'
+                }
+            });
+
+            // WebGL Morph based on section
+            ScrollTrigger.create({
+                trigger: section,
+                start: 'top bottom',
+                end: 'bottom top',
+                scrub: 1,
+                onUpdate: (self) => {
+                    const progress = i + self.progress;
+                    material.uniforms.uMorph.value = progress;
+
+                    // Adjust bloom per section for variety
+                    bloomPass.strength = 1.2 - self.progress * 0.3;
+                    chromaticPass.uniforms.uOffset.value = 0.0015 + self.progress * 0.001;
+                }
+            });
+        });
+
+        // ============================================
+        // 7. ANIMATION LOOP
+        // ============================================
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const elapsedTime = clock.getElapsedTime();
+
+            // Update uniforms
+            material.uniforms.uTime.value = elapsedTime;
+
+            // Lerp mouse for smooth magnetic effect
+            mouse.lerp(targetMouse, 0.05);
+            material.uniforms.uMouse.value.set(mouse.x, mouse.y);
+            material.uniforms.uMouseStrength.value = THREE.MathUtils.lerp(
+                material.uniforms.uMouseStrength.value,
+                1.0,
+                0.1
+            );
+
+            // Rotate particle system slowly
+            particles.rotation.y = elapsedTime * 0.05;
+            particles.rotation.x = elapsedTime * 0.02;
+
+            // Render
+            composer.render();
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // ============================================
+        // 8. RESIZE HANDLER
+        // ============================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        });
+
+    </script>
+</body>
+</html>
