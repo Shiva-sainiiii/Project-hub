@@ -263,11 +263,7 @@ img { display: block; max-width: 100%; }
   opacity: 0;
   transform: scale(0.7);
 }
-#heroLogo{
-width:125px;
-height:125px;
 
-}
 .hero-glow {
   position: absolute;
   inset: -30px;
