@@ -1,1 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shiva Saini — Full Stack Developer</title>
 
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- FIX: FontAwesome added for GitHub, LinkedIn icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Lucide Icons - abhi bhi rakhe hain navbar/other ke liye -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- Particles.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a href="#home" class="nav-brand">
+        <img src="favicon.png" alt="SS Logo" class="nav-logo" />
+        <span class="nav-name">SHIVA SAINI</span>
+      </a>
+
+      <!-- Hamburger (mobile) -->
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#home"     class="nav-link active">Home</a></li>
+        <li><a href="#about"    class="nav-link">About</a></li>
+        <li><a href="#skills"   class="nav-link">Skills</a></li>
+        <li><a href="#projects" class="nav-link">Projects</a></li>
+        <li><a href="#contact"  class="nav-link">Contact</a></li>
+        <li>
+          <a href="resume.pdf" class="nav-resume" download>
+            Resume
+            <i data-lucide="download" class="icon-sm"></i>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero" id="home">
+
+    <!-- Blinking stars overlay (particles.js) -->
+    <div id="particles-js"></div>
+
+    <!-- Three.js Moon + deep space starfield -->
+    <canvas id="planet-canvas"></canvas>
+
+    <!-- Hero content -->
+    <div class="hero-content">
+      
+
+
+      <div class="hero-logo-wrap">
+        <img src="favicon.png" alt="SS" class="hero-logo" id="heroLogo" />
+        <div class="hero-glow"></div>
+      </div>
+
+      <!-- UPGRADE 2: Backdrop blur wrapper for readability -->
+      <div class="hero-text-wrap">
+        <h1 class="hero-name" id="heroName">SHIVA SAINI</h1>
+
+        <!-- UPGRADE 3: Typewriter effect -->
+        <p class="hero-title" id="heroTitle">
+          <span class="title-line"></span>
+          <span id="typewriter"></span>
+          <span class="title-line"></span>
+        </p>
+
+        <p class="hero-desc" id="heroDesc">
+          I build modern, responsive and scalable web<br />
+          applications with clean code and great user experiences.
+        </p>
+      </div>
+
+      <!-- UPGRADE 4: Two CTA Buttons -->
+      <div class="hero-btn-group" id="heroBtnGroup">
+        <a href="#projects" class="hero-btn hero-btn-primary">
+          View My Work
+          <i data-lucide="arrow-right" class="icon-sm"></i>
+        </a>
+        <a href="resume.pdf" class="hero-btn hero-btn-secondary" download>
+          Download CV
+          <i data-lucide="download" class="icon-sm"></i>
+        </a>
+      </div>
+
+      <!-- FIX + UPGRADE 5: Social icons with FontAwesome + labels -->
+      <div class="hero-socials" id="heroSocials">
+        <a href="https://github.com/yourusername" target="_blank" aria-label="GitHub" class="social-icon">
+          <i class="fa-brands fa-github"></i>
+          <span class="social-label">15+ Projects</span>
+        </a>
+        <a href="https://linkedin.com/in/yourusername" target="_blank" aria-label="LinkedIn" class="social-icon">
+          <i class="fa-brands fa-linkedin-in"></i>
+          <span class="social-label">500+ Network</span>
+        </a>
+        <a href="mailto:shiva@example.com" aria-label="Email" class="social-icon">
+          <i class="fa-solid fa-envelope"></i>
+          <span class="social-label">Hire Me</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint" id="scrollHint">
+
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- ── ABOUT ── -->
+  <section class="section" id="about">
+    <div class="container">
+      <p class="section-eyebrow reveal">About</p>
+      <h2 class="section-title reveal">Who I Am</h2>
+      <div class="about-grid">
+        <div class="about-text reveal">
+          <p>I'm a Full Stack Developer passionate about crafting performant, pixel-perfect web experiences. From database architecture to polished UIs, I handle the full spectrum with precision.</p>
+          <p>When I'm not coding, I'm exploring new technologies, contributing to open-source, and finding elegance in complex problems.</p>
+        </div>
+        <div class="about-stats reveal">
+          <div class="stat"><span class="stat-num" data-target="3">0</span><span>+</span><p>Years Experience</p></div>
+          <div class="stat"><span class="stat-num" data-target="30">0</span><span>+</span><p>Projects Delivered</p></div>
+          <div class="stat"><span class="stat-num" data-target="15">0</span><span>+</span><p>Happy Clients</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SKILLS ── -->
+  <section class="section section-alt" id="skills">
+    <div class="container">
+      <p class="section-eyebrow reveal">Expertise</p>
+      <h2 class="section-title reveal">Skills</h2>
+      <div class="skills-grid">
+        <div class="skill-card reveal" data-delay="0">
+          <i data-lucide="code-2" class="skill-icon"></i>
+          <h3>Frontend</h3>
+          <p>React, Next.js, TypeScript, Tailwind, GSAP</p>
+        </div>
+        <div class="skill-card reveal" data-delay="100">
+          <i data-lucide="server" class="skill-icon"></i>
+          <h3>Backend</h3>
+          <p>Node.js, Express, Python, REST APIs, GraphQL</p>
+        </div>
+        <div class="skill-card reveal" data-delay="200">
+          <i data-lucide="database" class="skill-icon"></i>
+          <h3>Database</h3>
+          <p>MongoDB, PostgreSQL, MySQL, Redis</p>
+        </div>
+        <div class="skill-card reveal" data-delay="300">
+          <i data-lucide="cloud" class="skill-icon"></i>
+          <h3>DevOps</h3>
+          <p>Docker, AWS, CI/CD, Git, Linux</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PROJECTS ── -->
+  <section class="section" id="projects">
+    <div class="container">
+      <p class="section-eyebrow reveal">Work</p>
+      <h2 class="section-title reveal">Projects</h2>
+      <div class="projects-grid">
+        <div class="project-card reveal">
+          <div class="project-num">01</div>
+          <h3>E-Commerce Platform</h3>
+          <p>Full-stack shop with real-time inventory, payments & admin dashboard.</p>
+          <div class="project-tags">
+            <span>Next.js</span><span>Node</span><span>MongoDB</span>
+          </div>
+          <div class="project-links">
+            <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
+            <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
+          </div>
+        </div>
+        <div class="project-card reveal">
+          <div class="project-num">02</div>
+          <h3>SaaS Dashboard</h3>
+          <p>Analytics platform with real-time charts, team management & billing.</p>
+          <div class="project-tags">
+            <span>React</span><span>TypeScript</span><span>PostgreSQL</span>
+          </div>
+          <div class="project-links">
+            <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
+            <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
+          </div>
+        </div>
+        <div class="project-card reveal">
+          <div class="project-num">03</div>
+          <h3>AI Chat App</h3>
+          <p>Conversational AI interface with context memory & streaming responses.</p>
+          <div class="project-tags">
+            <span>Python</span><span>FastAPI</span><span>React</span>
+          </div>
+          <div class="project-links">
+            <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
+            <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CONTACT ── -->
+  <section class="section section-alt" id="contact">
+    <div class="container contact-container">
+      <p class="section-eyebrow reveal">Say Hello</p>
+      <h2 class="section-title reveal">Contact</h2>
+      <p class="contact-sub reveal">Have a project in mind? Let's build something great together.</p>
+      <div class="contact-actions reveal">
+        <a href="mailto:shiva@example.com" class="hero-btn">
+          Send Email <i data-lucide="mail" class="icon-sm"></i>
+        </a>
+        <div class="contact-socials">
+          <a href="#" class="social-icon"><i class="fa-brands fa-github"></i></a>
+          <a href="#" class="social-icon"><i class="fa-brands fa-linkedin-in"></i></a>
+          <a href="#" class="social-icon"><i class="fa-brands fa-twitter"></i></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="nav-brand">
+        <img src="favicon.png" alt="SS Logo" class="nav-logo" />
+        <span class="nav-name">SHIVA SAINI</span>
+      </div>
+      <p class="footer-copy">© 2026 Shiva Saini. Crafted with precision.</p>
+    </div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
