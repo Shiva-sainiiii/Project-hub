@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TextCraft → PDF</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #7c6dfa;
+    --accent2: #fa6d9a;
+    --accent3: #6dfac2;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,109,250,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,109,250,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(124,109,250,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .orb2 {
+    position: fixed;
+    bottom: -150px;
+    left: -150px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(250,109,154,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 32px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 24px rgba(124,109,250,0.4);
+  }
+
+  .logo-text {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: rgba(124,109,250,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(124,109,250,0.3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 48px 0 32px;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(36px, 5vw, 62px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 .line2 {
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ── Syntax Guide ── */
+  .syntax-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 16px 0 20px;
+    scrollbar-width: none;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .syntax-strip::-webkit-scrollbar { display: none; }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 14px;
+    border-radius: 6px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    white-space: nowrap;
+    cursor: default;
+    transition: all 0.2s;
+  }
+
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip b { color: var(--accent3); }
+
+  /* ── Main Layout ── */
+  .editor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding-bottom: 60px;
+  }
+
+  @media (max-width: 768px) {
+    .editor-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 560px;
+    transition: border-color 0.2s;
+  }
+
+  .panel:focus-within { border-color: rgba(124,109,250,0.5); }
+
+  .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .panel-title {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .panel-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .panel-title .dot.green { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+  .char-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  textarea {
+    flex: 1;
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.8;
+    color: var(--text);
+    caret-color: var(--accent);
+    min-height: 500px;
+  }
+
+  textarea::placeholder { color: rgba(112,112,160,0.4); }
+
+  /* ── Preview ── */
+  .preview-body {
+    flex: 1;
+    padding: 20px 24px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .preview-body::-webkit-scrollbar { width: 4px; }
+  .preview-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .preview-content h1, .preview-content h2, .preview-content h3,
+  .preview-content h4, .preview-content h5, .preview-content h6 {
+    font-family: var(--display);
+    color: var(--text);
+    margin: 20px 0 10px;
+    line-height: 1.2;
+  }
+
+  .preview-content h1 { font-size: 26px; font-weight: 800; border-bottom: 2px solid var(--accent); padding-bottom: 8px; color: #fff; }
+  .preview-content h2 { font-size: 20px; font-weight: 700; color: #e0e0f5; }
+  .preview-content h3 { font-size: 16px; font-weight: 600; color: var(--accent); }
+
+  .preview-content p {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #c0c0d8;
+    margin: 10px 0;
+  }
+
+  .preview-content strong { color: #fff; font-weight: 700; }
+  .preview-content em { color: var(--accent2); font-style: italic; }
+
+  .preview-content ul, .preview-content ol {
+    padding-left: 22px;
+    margin: 10px 0;
+  }
+
+  .preview-content li {
+    font-size: 13.5px;
+    line-height: 1.8;
+    color: #c0c0d8;
+    margin: 4px 0;
+  }
+
+  .preview-content li::marker { color: var(--accent); }
+
+  .preview-content code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: rgba(124,109,250,0.12);
+    color: var(--accent3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(124,109,250,0.2);
+  }
+
+  .preview-content pre {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+
+  .preview-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--accent3);
+    font-size: 12.5px;
+  }
+
+  .preview-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+
+  .preview-content th {
+    background: rgba(124,109,250,0.2);
+    color: #fff;
+    font-family: var(--display);
+    font-weight: 700;
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid rgba(124,109,250,0.3);
+  }
+
+  .preview-content td {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    color: #c0c0d8;
+  }
+
+  .preview-content tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  .preview-content blockquote {
+    border-left: 3px solid var(--accent2);
+    padding-left: 16px;
+    margin: 12px 0;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .preview-content hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  /* ── Controls Bar ── */
+  .controls {
+    padding: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 24px;
+    border-radius: 10px;
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #9b5ffa);
+    color: #fff;
+    box-shadow: 0 4px 24px rgba(124,109,250,0.4);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(124,109,250,0.5);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-danger {
+    background: transparent;
+    color: #fa6d6d;
+    border: 1px solid rgba(250,109,109,0.3);
+  }
+
+  .btn-danger:hover { background: rgba(250,109,109,0.1); }
+
+  /* ── PDF Settings ── */
+  .settings-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-bottom: 16px;
+  }
+
+  .setting-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+  }
+
+  .setting-group label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .setting-group select, .setting-group input[type="text"] {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .setting-group select option { background: var(--card); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  .btn-primary.loading .spinner { display: block; }
+  .btn-primary.loading .btn-label { opacity: 0.6; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* PDF render area - hidden */
+  #pdf-render {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 794px;
+    background: #ffffff;
+    padding: 60px 70px;
+    font-family: 'Georgia', serif;
+    color: #111;
+    z-index: -1;
+  }
+
+  #pdf-render h1 {
+    font-size: 26px;
+    font-weight: bold;
+    border-bottom: 2px solid #333;
+    padding-bottom: 8px;
+    margin: 0 0 20px;
+    color: #111;
+  }
+
+  #pdf-render h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 24px 0 10px;
+    color: #222;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+  }
+
+  #pdf-render h3 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 18px 0 8px;
+    color: #333;
+  }
+
+  #pdf-render h4, #pdf-render h5, #pdf-render h6 {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 14px 0 6px;
+    color: #444;
+  }
+
+  #pdf-render p {
+    font-size: 13px;
+    line-height: 1.8;
+    margin: 8px 0;
+    color: #222;
+  }
+
+  #pdf-render strong { font-weight: bold; color: #000; }
+  #pdf-render em { font-style: italic; }
+  #pdf-render u { text-decoration: underline; }
+
+  #pdf-render ul, #pdf-render ol {
+    padding-left: 24px;
+    margin: 10px 0;
+  }
+
+  #pdf-render li {
+    font-size: 13px;
+    line-height: 1.8;
+    margin: 3px 0;
+    color: #222;
+  }
+
+  #pdf-render table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 12px;
+  }
+
+  #pdf-render th {
+    background: #2c2c6c;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid #444;
+    font-weight: bold;
+  }
+
+  #pdf-render td {
+    padding: 7px 12px;
+    border: 1px solid #ccc;
+    color: #222;
+  }
+
+  #pdf-render tr:nth-child(even) td { background: #f5f5f5; }
+
+  #pdf-render code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: #f0f0f0;
+    padding: 2px 5px;
+    border-radius: 3px;
+    color: #333;
+  }
+
+  #pdf-render pre {
+    background: #f4f4f4;
+    padding: 14px;
+    border-radius: 4px;
+    border-left: 3px solid #555;
+    margin: 12px 0;
+    overflow: hidden;
+  }
+
+  #pdf-render pre code {
+    background: none;
+    padding: 0;
+    font-size: 11.5px;
+  }
+
+  #pdf-render blockquote {
+    border-left: 3px solid #999;
+    padding-left: 14px;
+    color: #555;
+    font-style: italic;
+    margin: 12px 0;
+  }
+
+  #pdf-render hr {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 20px 0;
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    color: var(--muted);
+    text-align: center;
+    gap: 10px;
+    opacity: 0.5;
+  }
+
+  .empty-state .icon { font-size: 40px; opacity: 0.4; }
+  .empty-state p { font-size: 13px; max-width: 200px; line-height: 1.5; }
+
+</style>
+</head>
+<body>
+<div class="orb2"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">📄</div>
+      <div>
+        <div class="logo-text">Text<span>Craft</span></div>
+      </div>
+    </div>
+    <div class="badge">Markdown → PDF</div>
+  </header>
+
+  <div class="hero">
+    <h1>
+      Write in Markdown,<br>
+      <span class="line2">Export Beautiful PDFs</span>
+    </h1>
+    <p>Paste your AI-generated text with ### headings, **bold**, tables, and lists — download a perfectly formatted PDF instantly.</p>
+  </div>
+
+  <div class="syntax-strip">
+    <div class="chip"><b>#</b> Heading 1</div>
+    <div class="chip"><b>##</b> Heading 2</div>
+    <div class="chip"><b>###</b> Heading 3</div>
+    <div class="chip"><b>**bold**</b></div>
+    <div class="chip"><b>*italic*</b></div>
+    <div class="chip"><b>- list</b> items</div>
+    <div class="chip"><b>1.</b> numbered</div>
+    <div class="chip"><b>| table |</b> rows</div>
+    <div class="chip"><b>`code`</b> inline</div>
+    <div class="chip"><b>&gt;</b> blockquote</div>
+    <div class="chip"><b>---</b> divider</div>
+  </div>
+
+  <!-- Settings Row -->
+  <div class="settings-row">
+    <div class="setting-group">
+      <label>📄 Page Size</label>
+      <select id="page-size">
+        <option value="a4">A4</option>
+        <option value="letter">Letter</option>
+        <option value="a3">A3</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>🔤 Font</label>
+      <select id="font-select">
+        <option value="georgia">Georgia (Serif)</option>
+        <option value="arial">Arial (Sans)</option>
+        <option value="courier">Courier (Mono)</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>📁 Filename</label>
+      <input type="text" id="filename" value="document" placeholder="document" style="width:110px"/>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-outline" onclick="loadSample()">📋 Load Sample</button>
+    <button class="btn btn-primary" id="download-btn" onclick="generatePDF()">
+      <div class="spinner"></div>
+      <span class="btn-label">⬇ Download PDF</span>
+    </button>
+    <button class="btn btn-danger" onclick="clearAll()">✕ Clear</button>
+  </div>
+
+  <!-- Editor Grid -->
+  <div class="editor-grid">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot"></div> Markdown Input</div>
+        <span class="char-count" id="char-count">0 chars</span>
+      </div>
+      <textarea id="editor" placeholder="# Your Document Title
+
+Start typing or paste your AI-generated text here...
+
+### Section Heading
+**Bold text** and *italic text* supported.
+
+| Column A | Column B |
+|----------|----------|
+| Cell 1   | Cell 2   |
+
+- Bullet item one
+- Bullet item two
+
+1. Numbered item
+2. Second item
+
+> This is a blockquote
+
+---" spellcheck="false"></textarea>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot green"></div> Live Preview</div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">WYSIWYG</span>
+      </div>
+      <div class="preview-body">
+        <div class="preview-content" id="preview">
+          <div class="empty-state">
+            <div class="icon">✍️</div>
+            <p>Start typing in the editor to see your formatted preview here</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden PDF render zone -->
+<div id="pdf-render"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✓</span>
+  <span id="toast-msg">PDF downloaded!</span>
+</div>
+
+<script>
+const editor = document.getElementById('editor');
+const preview = document.getElementById('preview');
+const charCount = document.getElementById('char-count');
+
+// Marked options
+marked.setOptions({ breaks: true, gfm: true });
+
+// Live preview
+editor.addEventListener('input', () => {
+  updatePreview();
+  charCount.textContent = editor.value.length + ' chars';
+});
+
+function updatePreview() {
+  const val = editor.value.trim();
+  if (!val) {
+    preview.innerHTML = `<div class="empty-state"><div class="icon">✍️</div><p>Start typing to see the preview</p></div>`;
+    return;
+  }
+  preview.innerHTML = marked.parse(val);
+}
+
+// Sample text (the provided MCQ content)
+function loadSample() {
+  editor.value = `# General Knowledge MCQs — MDU BA LLB Entrance
+
+---
+
+## Section 1: Indian History & National Movement
+
+### Q1. Which Indus Valley Civilization site was known for its dockyard?
+
+- A. Harappa
+- B. Mohenjo-Daro
+- **C. Lothal ✓**
+- D. Kalibangan
+
+### Q2. The First Battle of Panipat (1526) was fought between Babur and:
+
+1. Rana Sanga
+2. **Ibrahim Lodi ✓**
+3. Hemu
+4. Akbar
+
+---
+
+## Section 2: Indian Polity & Constitution
+
+### Q21. Who is known as the *Father of the Indian Constitution*?
+
+> **Answer: Dr. B.R. Ambedkar**
+
+The concept of **Fundamental Rights** was borrowed from the *USA*.
+
+---
+
+## Answer Key
+
+| Q.No | Answer | Q.No | Answer |
+|------|--------|------|--------|
+| 1    | C      | 11   | C      |
+| 2    | B      | 12   | B      |
+| 3    | C      | 13   | C      |
+| 4    | B      | 14   | D      |
+| 5    | D      | 15   | C      |`;
+  updatePreview();
+  charCount.textContent = editor.value.length + ' chars';
+  showToast('📋', 'Sample loaded!');
+}
+
+function clearAll() {
+  editor.value = '';
+  preview.innerHTML = `<div class="empty-state"><div class="icon">✍️</div><p>Start typing to see the preview</p></div>`;
+  charCount.textContent = '0 chars';
+}
+
+// Generate PDF via html2canvas
+async function generatePDF() {
+  const text = editor.value.trim();
+  if (!text) { showToast('⚠', 'Nothing to export!'); return; }
+
+  const btn = document.getElementById('download-btn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const font = document.getElementById('font-select').value;
+    const fontMap = { georgia: 'Georgia, serif', arial: 'Arial, sans-serif', courier: '"Courier New", monospace' };
+    const pageSize = document.getElementById('page-size').value;
+    const filename = (document.getElementById('filename').value.trim() || 'document') + '.pdf';
+
+    // Set font in hidden render area
+    const renderEl = document.getElementById('pdf-render');
+    renderEl.style.fontFamily = fontMap[font];
+    renderEl.innerHTML = marked.parse(text);
+
+    // Page dimensions (px at 96dpi → pt conversion handled by jsPDF)
+    const pageDims = {
+      a4:     { w: 794, h: 1123, jW: 210, jH: 297 },
+      letter: { w: 816, h: 1056, jW: 215.9, jH: 279.4 },
+      a3:     { w: 1123, h: 1587, jW: 297, jH: 420 }
+    };
+
+    const dim = pageDims[pageSize];
+    renderEl.style.width = dim.w + 'px';
+
+    await new Promise(r => setTimeout(r, 200)); // allow render
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: pageSize === 'letter' ? [dim.jW, dim.jH] : pageSize });
+
+    const pageHeightPx = dim.h - 80; // content height per page
+
+    const canvas = await html2canvas(renderEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: dim.w,
+      windowWidth: dim.w
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const imgWidth = dim.jW;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const pageHeight = dim.jH;
+
+    let yPos = 0;
+    let remainingHeight = imgHeight;
+    let firstPage = true;
+
+    while (remainingHeight > 0) {
+      if (!firstPage) pdf.addPage();
+      firstPage = false;
+
+      const sliceHeight = Math.min(remainingHeight, pageHeight);
+
+      pdf.addImage(
+        imgData,
+        'JPEG',
+        0,
+        -yPos,
+        imgWidth,
+        imgHeight
+      );
+
+      yPos += pageHeight;
+      remainingHeight -= pageHeight;
+    }
+
+    pdf.save(filename);
+    showToast('✓', 'PDF downloaded successfully!');
+
+  } catch (err) {
+    console.error(err);
+    showToast('✕', 'Error generating PDF');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Keyboard shortcut Ctrl+Enter
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generatePDF();
+});
+</script>
+</body>
+</html>

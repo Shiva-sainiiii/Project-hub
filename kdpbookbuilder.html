@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Manuscript → KDP</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#14181A;
+    --ink-2:#1f2523;
+    --paper:#F3EFE6;
+    --paper-2:#EAE2CF;
+    --paper-3:#E2D8C0;
+    --teal:#2F4F4A;
+    --teal-light:#3F6661;
+    --brass:#B6904A;
+    --brass-dark:#92742F;
+    --text:#211D1A;
+    --text-soft:#5b554a;
+    --line:#C9C0AE;
+    --danger:#9C3B2C;
+    --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --font-body: Georgia, "Times New Roman", serif;
+    --font-mono: "Courier New", Courier, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding-bottom:96px;}
+
+  /* ---------- HEADER ---------- */
+  header.topbar{
+    background:var(--ink);
+    color:var(--paper);
+    padding:22px 18px 16px;
+    border-bottom:1px solid #2a302d;
+  }
+  header.topbar .brand{
+    font-family:var(--font-display);
+    font-size:22px;
+    letter-spacing:0.3px;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  header.topbar .brand .arrow{color:var(--brass);font-size:17px;}
+  header.topbar .sub{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:#9aa39e;
+    margin-top:4px;
+  }
+  .settings-row{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .settings-row label{
+    font-family:var(--font-mono);
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:#9aa39e;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .settings-row select{
+    font-family:var(--font-mono);
+    font-size:12px;
+    background:var(--ink-2);
+    color:var(--paper);
+    border:1px solid #3a423e;
+    border-radius:3px;
+    padding:6px 8px;
+  }
+  .kdp-note{
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:#7e887f;
+    margin-top:10px;
+    line-height:1.5;
+  }
+
+  /* ---------- TAB RAIL ---------- */
+  nav.tabrail{
+    display:flex;
+    background:var(--ink);
+    padding:14px 14px 0;
+    gap:4px;
+    overflow-x:auto;
+  }
+  nav.tabrail button{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    background:var(--paper-2);
+    color:var(--text-soft);
+    border:none;
+    border-radius:6px 6px 0 0;
+    padding:10px 14px;
+    cursor:pointer;
+    white-space:nowrap;
+    position:relative;
+    top:1px;
+    opacity:0.7;
+  }
+  nav.tabrail button .num{color:var(--brass-dark);margin-right:6px;}
+  nav.tabrail button.active{
+    background:var(--paper);
+    color:var(--text);
+    opacity:1;
+    font-weight:bold;
+  }
+  nav.tabrail button.active .num{color:var(--teal);}
+
+  /* ---------- STAGE / LEAVES ---------- */
+  main.stage{
+    background:var(--paper);
+    padding:26px 18px 36px;
+    min-height:50vh;
+  }
+  .leaf{display:none;}
+  .leaf.active{display:block;animation:fadein 0.2s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .leaf h2{
+    font-family:var(--font-display);
+    font-size:21px;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .leaf .desc{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--text-soft);
+    margin:0 0 22px;
+    line-height:1.5;
+  }
+
+  .field{margin-bottom:18px;}
+  .field label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    color:var(--teal);
+    margin-bottom:6px;
+  }
+  .field input[type=text], .field input[type=number], .field textarea{
+    width:100%;
+    font-family:var(--font-body);
+    font-size:16px;
+    color:var(--text);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:11px 12px;
+    line-height:1.4;
+  }
+  .field input:focus, .field textarea:focus{
+    outline:none;
+    border-color:var(--teal);
+    box-shadow:0 0 0 3px rgba(47,79,74,0.12);
+  }
+  .field textarea{resize:vertical;min-height:90px;}
+  .field .hint{font-family:var(--font-mono);font-size:10px;color:var(--text-soft);margin-top:5px;}
+
+  .tpl-btn{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    letter-spacing:0.5px;
+    background:none;
+    border:1px solid var(--teal);
+    color:var(--teal);
+    border-radius:3px;
+    padding:7px 11px;
+    cursor:pointer;
+    margin-bottom:14px;
+  }
+  .tpl-btn:active{background:var(--teal);color:#fff;}
+
+  /* ---------- TOC PREVIEW ---------- */
+  .toc-list{border-top:1px solid var(--line);}
+  .toc-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 2px;
+    border-bottom:1px dotted var(--line);
+    font-family:var(--font-body);
+    font-size:15px;
+  }
+  .toc-row .n{font-family:var(--font-mono);color:var(--brass-dark);min-width:22px;}
+  .toc-row .t{flex:1;}
+  .toc-row .p{font-family:var(--font-mono);color:var(--text-soft);font-size:12px;}
+  .toc-empty{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--text-soft);
+    padding:20px 0;
+  }
+
+  /* ---------- CHAPTER CARDS ---------- */
+  .chapter-card{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:16px 14px 14px;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .chapter-card:nth-child(odd){transform:rotate(-0.3deg);}
+  .chapter-card:nth-child(even){transform:rotate(0.3deg);}
+  .chapter-tag{
+    position:absolute;
+    top:-10px;left:14px;
+    background:var(--brass);
+    color:#fff;
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:bold;
+    padding:3px 9px;
+    border-radius:2px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.25);
+  }
+  .chapter-card-top{
+    display:flex;
+    justify-content:flex-end;
+    gap:6px;
+    margin-bottom:8px;
+  }
+  .icon-btn{
+    font-family:var(--font-mono);
+    font-size:12px;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--text-soft);
+    border-radius:3px;
+    width:30px;height:30px;
+    cursor:pointer;
+  }
+  .icon-btn.danger{color:var(--danger);}
+  .icon-btn.danger.confirming{background:var(--danger);color:#fff;border-color:var(--danger);font-size:9px;width:auto;padding:0 8px;}
+  .chapter-card .field{margin-bottom:10px;}
+  .chapter-card textarea{min-height:140px;}
+  .wordcount{
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:var(--text-soft);
+    text-align:right;
+  }
+
+  .stamp-wrap{display:flex;justify-content:center;padding:18px 0 6px;}
+  .stamp{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--brass-dark);
+    background:transparent;
+    border:2px dashed var(--brass);
+    border-radius:50%;
+    width:128px;height:128px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    cursor:pointer;
+    transform:rotate(-4deg);
+    transition:transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+    line-height:1.3;
+  }
+  .stamp:active{
+    transform:rotate(0deg) scale(0.96);
+    background:var(--brass);
+    color:#fff;
+  }
+
+  /* ---------- DOCK / FOOTER ---------- */
+  footer.dock{
+    position:fixed;
+    bottom:0;left:0;right:0;
+    background:var(--ink);
+    border-top:1px solid #2a302d;
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    z-index:10;
+  }
+  .dock .estimate{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:#9aa39e;
+    line-height:1.4;
+  }
+  .dock .estimate b{color:var(--paper);}
+  .dock button#generateBtn{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    letter-spacing:0.8px;
+    text-transform:uppercase;
+    background:var(--teal);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    padding:13px 18px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .dock button#generateBtn:active{background:var(--teal-light);}
+  .dock button#generateBtn:disabled{background:#4a5450;cursor:default;}
+
+  #toast{
+    position:fixed;
+    bottom:80px;left:16px;right:16px;
+    background:var(--danger);
+    color:#fff;
+    font-family:var(--font-mono);
+    font-size:12px;
+    padding:12px 14px;
+    border-radius:4px;
+    text-align:center;
+    transform:translateY(20px);
+    opacity:0;
+    pointer-events:none;
+    transition:all 0.25s ease;
+    z-index:20;
+  }
+  #toast.show{transform:translateY(0);opacity:1;}
+  #toast.ok{background:var(--teal);}
+
+  @media (min-width:600px){
+    .wrap{padding-bottom:88px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand"><span>Manuscript</span><span class="arrow">→</span><span>KDP</span></div>
+    <div class="sub">Print-ready PDF builder</div>
+    <div class="settings-row">
+      <label>Trim size
+        <select id="trimSize">
+          <option value="6x9" selected>6 × 9 in — popular</option>
+          <option value="5.5x8.5">5.5 × 8.5 in — compact</option>
+          <option value="8.5x11">8.5 × 11 in — workbook</option>
+        </select>
+      </label>
+    </div>
+    <div class="kdp-note">KDP paperbacks generally run 24–828 pages. This builds a clean, single-column print layout in Times — review it in KDP's previewer before publishing.</div>
+  </header>
+
+  <nav class="tabrail" id="tabrail">
+    <button data-tab="title" class="active"><span class="num">01</span>Title</button>
+    <button data-tab="copyright"><span class="num">02</span>Copyright</button>
+    <button data-tab="toc"><span class="num">03</span>Contents</button>
+    <button data-tab="chapters"><span class="num">04</span>Chapters</button>
+  </nav>
+
+  <main class="stage">
+
+    <section class="leaf active" data-leaf="title">
+      <h2>Title page</h2>
+      <p class="desc">This becomes page one of your book — title, tagline, author, and year, centered.</p>
+      <div class="field">
+        <label for="f-title">Book title</label>
+        <input type="text" id="f-title" placeholder="e.g. The Last Lighthouse">
+      </div>
+      <div class="field">
+        <label for="f-tagline">Tagline <span style="text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <input type="text" id="f-tagline" placeholder="e.g. A story of light in dark waters">
+      </div>
+      <div class="field">
+        <label for="f-author">Author name</label>
+        <input type="text" id="f-author" placeholder="e.g. Shanu Kumar">
+      </div>
+      <div class="field">
+        <label for="f-year">Year</label>
+        <input type="text" id="f-year" placeholder="e.g. 2026" inputmode="numeric">
+      </div>
+    </section>
+
+    <section class="leaf" data-leaf="copyright">
+      <h2>Copyright page</h2>
+      <p class="desc">Page two. Standard rights and edition text — fully editable.</p>
+      <button class="tpl-btn" id="tplBtn">Insert standard template</button>
+      <div class="field">
+        <label for="f-copyright">Copyright text</label>
+        <textarea id="f-copyright" rows="10" placeholder="Copyright © year, author. All rights reserved..."></textarea>
+      </div>
+    </section>
+
+    <section class="leaf" data-leaf="toc">
+      <h2>Table of contents</h2>
+      <p class="desc">Page three. Generated automatically from your chapter names below. Page numbers are calculated and inserted when you generate the PDF.</p>
+      <div class="toc-list" id="tocList"></div>
+    </section>
+
+    <section class="leaf" data-leaf="chapters">
+      <h2>Chapters</h2>
+      <p class="desc">Each chapter you add always starts on a fresh page in the final PDF — never mid-page.</p>
+      <div id="chaptersList"></div>
+      <div class="stamp-wrap">
+        <button class="stamp" id="addChapterBtn">+<br>Add<br>chapter</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="dock">
+  <div class="estimate" id="estimate">~<b>0</b> pages</div>
+  <button id="generateBtn">Generate PDF ▸</button>
+</footer>
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- STATE ----------------
+  let chapters = [
+    {id: cryptoId(), name:'', content:''}
+  ];
+  const book = {title:'', tagline:'', author:'', year:''};
+  let jspdfReady = false;
+  window.addEventListener('load', ()=>{ jspdfReady = !!(window.jspdf && window.jspdf.jsPDF); });
+
+  function cryptoId(){ return 'c' + Math.random().toString(36).slice(2,9); }
+
+  // ---------------- TABS ----------------
+  const tabBtns = document.querySelectorAll('#tabrail button');
+  const leaves = document.querySelectorAll('.leaf');
+  tabBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      tabBtns.forEach(b=>b.classList.remove('active'));
+      leaves.forEach(l=>l.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelector('.leaf[data-leaf="'+btn.dataset.tab+'"]').classList.add('active');
+    });
+  });
+  function goTab(name){
+    tabBtns.forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+    leaves.forEach(l=>l.classList.toggle('active', l.dataset.leaf===name));
+  }
+
+  // ---------------- TITLE PAGE BINDINGS ----------------
+  document.getElementById('f-title').addEventListener('input', e=>{ book.title = e.target.value; scheduleEstimate(); });
+  document.getElementById('f-tagline').addEventListener('input', e=>{ book.tagline = e.target.value; });
+  document.getElementById('f-author').addEventListener('input', e=>{ book.author = e.target.value; });
+  document.getElementById('f-year').addEventListener('input', e=>{ book.year = e.target.value; });
+
+  // ---------------- COPYRIGHT PAGE ----------------
+  document.getElementById('f-copyright').addEventListener('input', e=>{ book.copyright = e.target.value; });
+  document.getElementById('tplBtn').addEventListener('click', ()=>{
+    const y = book.year || 'YEAR';
+    const a = book.author || 'AUTHOR NAME';
+    const tpl = `Copyright \u00A9 ${y} ${a}\n\nAll rights reserved. No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the author, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.\n\nThis is a work of fiction. Names, characters, businesses, places, events, and incidents are either the products of the author's imagination or used in a fictitious manner.\n\nFirst Edition, ${y}`;
+    const ta = document.getElementById('f-copyright');
+    ta.value = tpl;
+    book.copyright = tpl;
+  });
+
+  // ---------------- CHAPTERS ----------------
+  const chaptersListEl = document.getElementById('chaptersList');
+
+  function renderChapters(){
+    chaptersListEl.innerHTML = '';
+    chapters.forEach((ch, idx)=>{
+      const card = document.createElement('div');
+      card.className = 'chapter-card';
+
+      const tag = document.createElement('div');
+      tag.className = 'chapter-tag';
+      tag.textContent = 'CH. ' + (idx+1);
+      card.appendChild(tag);
+
+      const top = document.createElement('div');
+      top.className = 'chapter-card-top';
+
+      if (idx > 0){
+        const up = document.createElement('button');
+        up.className = 'icon-btn'; up.title='Move up'; up.textContent = '↑';
+        up.addEventListener('click', ()=>{ [chapters[idx-1],chapters[idx]]=[chapters[idx],chapters[idx-1]]; renderChapters(); renderTOC(); scheduleEstimate(); });
+        top.appendChild(up);
+      }
+      if (idx < chapters.length-1){
+        const down = document.createElement('button');
+        down.className = 'icon-btn'; down.title='Move down'; down.textContent = '↓';
+        down.addEventListener('click', ()=>{ [chapters[idx+1],chapters[idx]]=[chapters[idx],chapters[idx+1]]; renderChapters(); renderTOC(); scheduleEstimate(); });
+        top.appendChild(down);
+      }
+      const del = document.createElement('button');
+      del.className = 'icon-btn danger'; del.title='Delete'; del.textContent = '×';
+      let confirming = false, confirmTimer = null;
+      del.addEventListener('click', ()=>{
+        if (chapters.length === 1){ showToast('Keep at least one chapter.'); return; }
+        if (!confirming){
+          confirming = true;
+          del.classList.add('confirming');
+          del.textContent = 'Confirm?';
+          confirmTimer = setTimeout(()=>{ confirming=false; del.classList.remove('confirming'); del.textContent='×'; }, 2800);
+        } else {
+          clearTimeout(confirmTimer);
+          chapters.splice(idx,1);
+          renderChapters(); renderTOC(); scheduleEstimate();
+        }
+      });
+      top.appendChild(del);
+      card.appendChild(top);
+
+      const nameField = document.createElement('div');
+      nameField.className = 'field';
+      const nameLabel = document.createElement('label');
+      nameLabel.textContent = 'Chapter name';
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = 'e.g. The Beginning';
+      nameInput.value = ch.name;
+      nameInput.addEventListener('input', e=>{ ch.name = e.target.value; renderTOC(); scheduleEstimate(); });
+      nameField.appendChild(nameLabel); nameField.appendChild(nameInput);
+      card.appendChild(nameField);
+
+      const contentField = document.createElement('div');
+      contentField.className = 'field';
+      const contentLabel = document.createElement('label');
+      contentLabel.textContent = 'Chapter content';
+      const contentArea = document.createElement('textarea');
+      contentArea.placeholder = 'Write or paste the chapter text. Leave a blank line between paragraphs.';
+      contentArea.value = ch.content;
+      contentArea.addEventListener('input', e=>{
+        ch.content = e.target.value;
+        e.target.style.height = 'auto';
+        e.target.style.height = e.target.scrollHeight + 'px';
+        scheduleEstimate();
+      });
+      contentField.appendChild(contentLabel); contentField.appendChild(contentArea);
+      card.appendChild(contentField);
+
+      const wc = document.createElement('div');
+      wc.className = 'wordcount';
+      const words = (ch.content||'').trim().split(/\s+/).filter(Boolean).length;
+      wc.textContent = words + ' words';
+      card.appendChild(wc);
+
+      chaptersListEl.appendChild(card);
+    });
+  }
+
+  document.getElementById('addChapterBtn').addEventListener('click', ()=>{
+    chapters.push({id:cryptoId(), name:'', content:''});
+    renderChapters();
+    renderTOC();
+    scheduleEstimate();
+    setTimeout(()=>{
+      const cards = chaptersListEl.querySelectorAll('.chapter-card');
+      const last = cards[cards.length-1];
+      if (last) last.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 60);
+  });
+
+  // ---------------- TOC PREVIEW ----------------
+  const tocListEl = document.getElementById('tocList');
+  function renderTOC(){
+    tocListEl.innerHTML = '';
+    const named = chapters.filter(c => c.name && c.name.trim());
+    if (named.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'toc-empty';
+      empty.textContent = 'Add chapter names in the Chapters tab to see them listed here.';
+      tocListEl.appendChild(empty);
+      return;
+    }
+    chapters.forEach((c, idx)=>{
+      if (!c.name || !c.name.trim()) return;
+      const row = document.createElement('div');
+      row.className = 'toc-row';
+      const n = document.createElement('span'); n.className='n'; n.textContent=(idx+1)+'.';
+      const t = document.createElement('span'); t.className='t'; t.textContent=c.name;
+      const p = document.createElement('span'); p.className='p'; p.textContent='—';
+      row.appendChild(n); row.appendChild(t); row.appendChild(p);
+      tocListEl.appendChild(row);
+    });
+  }
+
+  // ---------------- TOAST ----------------
+  let toastTimer = null;
+  function showToast(msg, ok){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = ok ? 'show ok' : 'show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>{ t.classList.remove('show'); }, 3200);
+  }
+
+  // ---------------- TRIM SIZE ----------------
+  function getTrim(){
+    const v = document.getElementById('trimSize').value;
+    const parts = v.split('x').map(Number);
+    return {w:parts[0], h:parts[1]};
+  }
+  document.getElementById('trimSize').addEventListener('change', scheduleEstimate);
+
+  // ---------------- LAYOUT ENGINE ----------------
+  function computeLayout(doc, trimW, trimH){
+    const MARGIN = 0.75;
+    const CONTENT_W = trimW - 2*MARGIN;
+    const CONTENT_TOP = MARGIN;
+    const CONTENT_BOTTOM = trimH - MARGIN;
+    const CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP;
+    const BODY_SIZE = 11;
+    const BODY_LH = (BODY_SIZE*1.45)/72;
+    const HEADING_BLOCK = 1.4;
+
+    doc.setFont('times','normal');
+    doc.setFontSize(BODY_SIZE);
+    const normalCap = Math.max(1, Math.floor(CONTENT_H / BODY_LH));
+    const firstCap = Math.max(1, Math.floor((CONTENT_H - HEADING_BLOCK) / BODY_LH));
+
+    function wrapParas(text){
+      const paras = (text||'').split(/\n+/).map(p=>p.trim()).filter(Boolean);
+      let lines = [];
+      paras.forEach((p,i)=>{
+        lines.push.apply(lines, doc.splitTextToSize(p, CONTENT_W));
+        if (i < paras.length-1) lines.push('');
+      });
+      if (lines.length===0) lines.push('');
+      return lines;
+    }
+    function paginate(lines, capFirst, capRest){
+      const pages=[]; let i=0; let cap=capFirst;
+      while(i<lines.length){ pages.push(lines.slice(i,i+cap)); i+=cap; cap=capRest; }
+      if (pages.length===0) pages.push([]);
+      return pages;
+    }
+
+    const chs = chapters.map((c)=>{
+      const lines = wrapParas(c.content);
+      const pages = paginate(lines, firstCap, normalCap);
+      return {name: (c.name && c.name.trim()) ? c.name.trim() : 'Untitled Chapter', pages, pageCount: pages.length};
+    });
+
+    // TOC pagination
+    const TOC_SIZE = 11.5;
+    doc.setFontSize(TOC_SIZE);
+    const TOC_LH = (TOC_SIZE*2.0)/72;
+    const tocHeadingBlock = 0.9;
+    const tocNormalCap = Math.max(1, Math.floor(CONTENT_H/TOC_LH));
+    const tocFirstCap = Math.max(1, Math.floor((CONTENT_H - tocHeadingBlock)/TOC_LH));
+    const tocEntries = chs.map(c=>c.name);
+    const tocPages = paginate(tocEntries, tocFirstCap, tocNormalCap);
+
+    let physPage = 2 + tocPages.length; // title(1) + copyright(1) + toc pages
+    let printedPage = 1;
+    chs.forEach(c=>{
+      c.physicalStart = physPage + 1;
+      c.printedStart = printedPage;
+      physPage += c.pageCount;
+      printedPage += c.pageCount;
+    });
+
+    return {MARGIN, CONTENT_W, CONTENT_TOP, CONTENT_BOTTOM, CONTENT_H, BODY_SIZE, BODY_LH, TOC_LH, HEADING_BLOCK, chs, tocPages, totalPages: physPage};
+  }
+
+  // ---------------- ESTIMATE ----------------
+  let estTimer = null;
+  function scheduleEstimate(){
+    clearTimeout(estTimer);
+    estTimer = setTimeout(updateEstimate, 350);
+  }
+  function updateEstimate(){
+    if (!jspdfReady && window.jspdf) jspdfReady = true;
+    if (!jspdfReady) return;
+    try{
+      const {w,h} = getTrim();
+      const doc = new window.jspdf.jsPDF({unit:'in', format:[w,h]});
+      const layout = computeLayout(doc, w, h);
+      document.getElementById('estimate').innerHTML = '~<b>' + layout.totalPages + '</b> pages';
+    }catch(e){ /* silent */ }
+  }
+
+  // ---------------- RENDER / GENERATE ----------------
+  function drawTocLine(doc, label, title, pageNum, leftX, rightX, y){
+    doc.setFont('times','normal');
+    doc.setFontSize(11.5);
+    const prefix = label + ' ';
+    doc.text(prefix, leftX, y);
+    const prefixW = doc.getTextWidth(prefix);
+    const titleX = leftX + prefixW;
+    const titleW = doc.getTextWidth(title);
+    doc.text(title, titleX, y);
+    const pageStr = String(pageNum);
+    const pageW = doc.getTextWidth(pageStr);
+    doc.text(pageStr, rightX - pageW, y);
+    const dotW = doc.getTextWidth('.');
+    const gapStart = titleX + titleW + 0.05;
+    const gapEnd = rightX - pageW - 0.05;
+    if (gapEnd > gapStart && dotW > 0){
+      const n = Math.floor((gapEnd-gapStart)/dotW);
+      if (n > 0) doc.text('.'.repeat(n), gapStart, y);
+    }
+  }
+
+  function generatePdf(){
+    if (!book.title || !book.title.trim()){
+      showToast('Add a book title before generating.');
+      goTab('title');
+      return;
+    }
+    const namedChapters = chapters.filter(c=>c.name && c.name.trim());
+    if (namedChapters.length === 0){
+      showToast('Add at least one chapter name before generating.');
+      goTab('chapters');
+      return;
+    }
+    if (!window.jspdf || !window.jspdf.jsPDF){
+      showToast('PDF engine still loading — try again in a moment.');
+      return;
+    }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating…';
+
+    setTimeout(()=>{
+      try{
+        const {w,h} = getTrim();
+        const doc = new window.jspdf.jsPDF({unit:'in', format:[w,h]});
+        const layout = computeLayout(doc, w, h);
+        const {MARGIN, CONTENT_W, CONTENT_TOP, BODY_SIZE, BODY_LH, HEADING_BLOCK, chs, tocPages} = layout;
+        const PAGE_W = w, PAGE_H = h, cx = PAGE_W/2;
+
+        doc.setProperties({title: book.title, author: book.author || ''});
+
+        // ---- Title page ----
+        doc.setFont('times','bold'); doc.setFontSize(30);
+        let y = PAGE_H * 0.32;
+        doc.splitTextToSize(book.title, CONTENT_W).forEach(line=>{
+          doc.text(line, cx, y, {align:'center'}); y += 0.42;
+        });
+        if (book.tagline && book.tagline.trim()){
+          doc.setFont('times','italic'); doc.setFontSize(13);
+          y += 0.18;
+          doc.splitTextToSize(book.tagline, CONTENT_W*0.85).forEach(line=>{
+            doc.text(line, cx, y, {align:'center'}); y += 0.24;
+          });
+        }
+        doc.setFont('times','normal'); doc.setFontSize(13);
+        doc.text(book.author || '', cx, PAGE_H - 1.5, {align:'center'});
+        doc.setFontSize(11);
+        doc.text(String(book.year || ''), cx, PAGE_H - 1.2, {align:'center'});
+
+        // ---- Copyright page ----
+        doc.addPage();
+        doc.setFont('times','normal'); doc.setFontSize(9.5);
+        const crLH = (9.5*1.5)/72;
+        let cy = PAGE_H - 3.6;
+        const crText = (book.copyright && book.copyright.trim()) ? book.copyright : ('Copyright \u00A9 ' + (book.year||'') + ' ' + (book.author||'') + '. All rights reserved.');
+        crText.split(/\n+/).map(p=>p.trim()).filter(Boolean).forEach(p=>{
+          doc.splitTextToSize(p, CONTENT_W).forEach(l=>{ doc.text(l, MARGIN, cy); cy += crLH; });
+          cy += crLH*0.6;
+        });
+
+        // ---- TOC pages ----
+        let globalIdx = 0;
+        tocPages.forEach((pageLines, pIdx)=>{
+          doc.addPage();
+          let ty = CONTENT_TOP + 0.3;
+          if (pIdx === 0){
+            doc.setFont('times','bold'); doc.setFontSize(20);
+            doc.text('Contents', cx, ty, {align:'center'});
+            ty += 0.55;
+          }
+          const TOC_LH = (11.5*2.0)/72;
+          pageLines.forEach(title=>{
+            const c = chs[globalIdx];
+            globalIdx++;
+            drawTocLine(doc, (globalIdx)+'.', title, c.printedStart, MARGIN, PAGE_W-MARGIN, ty);
+            ty += TOC_LH;
+          });
+        });
+
+        // ---- Chapters ----
+        chs.forEach((c, idx)=>{
+          c.pages.forEach((pageLines, pageIdxInChapter)=>{
+            doc.addPage();
+            let by;
+            if (pageIdxInChapter === 0){
+              doc.setFont('times','normal'); doc.setFontSize(11);
+              doc.text('CHAPTER ' + (idx+1), cx, CONTENT_TOP + 0.5, {align:'center'});
+              doc.setFont('times','bold'); doc.setFontSize(18);
+              let hy = CONTENT_TOP + 0.9;
+              doc.splitTextToSize(c.name, CONTENT_W*0.9).forEach(l=>{
+                doc.text(l, cx, hy, {align:'center'}); hy += 0.3;
+              });
+              by = CONTENT_TOP + HEADING_BLOCK;
+            } else {
+              by = CONTENT_TOP;
+            }
+            doc.setFont('times','normal'); doc.setFontSize(BODY_SIZE);
+            pageLines.forEach(line=>{
+              if (line) doc.text(line, MARGIN, by);
+              by += BODY_LH;
+            });
+            doc.setFont('times','normal'); doc.setFontSize(9);
+            doc.text(String(c.printedStart + pageIdxInChapter), cx, PAGE_H - 0.45, {align:'center'});
+          });
+        });
+
+        const safeName = (book.title || 'manuscript').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'manuscript';
+        doc.save(safeName + '.pdf');
+        showToast('PDF generated — check your downloads.', true);
+      } catch(err){
+        console.error(err);
+        showToast('Something went wrong generating the PDF.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate PDF ▸';
+      }
+    }, 30);
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', generatePdf);
+
+  // ---------------- INIT ----------------
+  renderChapters();
+  renderTOC();
+  setTimeout(scheduleEstimate, 200);
+})();
+</script>
+</body>
+</html>
