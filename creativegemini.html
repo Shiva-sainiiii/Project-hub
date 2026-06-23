@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STUDIO.X | Interactive WebGL Experience</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #050505;
+        }
+        body {
+            font-family: 'Syncopate', sans-serif;
+            background-color: var(--bg-color);
+            color: #ffffff;
+            margin: 0;
+            overflow-x: hidden;
+            /* Prevent overscroll bounce on Mac */
+            overscroll-behavior: none; 
+        }
+        
+        /* Hide scrollbar for a cleaner aesthetic */
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* The WebGL Canvas Container */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none; /* Let clicks pass through to the DOM */
+        }
+
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* GSAP Text Reveal Setup */
+        .text-mask {
+            overflow: hidden;
+            display: block;
+        }
+        .text-reveal {
+            display: inline-block;
+            transform: translateY(110%);
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+            "gsap": "https://unpkg.com/gsap@3.12.5/index.js",
+            "gsap/ScrollTrigger": "https://unpkg.com/gsap@3.12.5/ScrollTrigger.js",
+            "@studio-freight/lenis": "https://unpkg.com/@studio-freight/lenis@1.0.39/dist/lenis.mjs"
+        }
+    }
+    </script>
+</head>
+<body>
+
+    <div id="webgl-container"></div>
+
+    <nav class="fixed top-0 left-0 w-full p-6 md:p-10 flex justify-between items-center z-50 pointer-events-auto mix-blend-difference">
+        <div class="text-xl md:text-2xl font-bold tracking-[0.3em]">STUDIO.X</div>
+        <div class="hidden md:flex gap-12 text-xs font-bold tracking-[0.2em] uppercase">
+            <a href="#" class="hover:text-cyan-400 transition-colors duration-500">Work</a>
+            <a href="#" class="hover:text-purple-400 transition-colors duration-500">Manifesto</a>
+            <a href="#" class="hover:text-emerald-400 transition-colors duration-500">Contact</a>
+        </div>
+    </nav>
+
+    <main id="scroll-wrapper" class="relative w-full z-10 pointer-events-none">
+        
+        <section class="h-screen w-full flex flex-col justify-center items-center text-center px-4">
+            <h1 class="text-4xl md:text-7xl lg:text-8xl font-bold tracking-[0.1em] uppercase mb-6 leading-tight">
+                <span class="text-mask"><span class="text-reveal">Creative</span></span><br>
+                <span class="text-mask"><span class="text-reveal">Digital</span></span><br>
+                <span class="text-mask"><span class="text-reveal text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Experiences</span></span>
+            </h1>
+            <p class="text-gray-400 tracking-[0.2em] max-w-lg mt-4 text-xs md:text-sm uppercase">
+                <span class="text-mask"><span class="text-reveal">Pushing the boundaries of interactive WebGL.</span></span>
+            </p>
+        </section>
+
+        <section class="h-screen w-full flex flex-col justify-center items-start px-8 md:px-32">
+            <h2 class="text-3xl md:text-6xl lg:text-7xl font-bold tracking-[0.1em] uppercase mb-8 leading-tight">
+                <span class="text-mask"><span class="text-reveal">Discover</span></span><br>
+                <span class="text-mask"><span class="text-reveal text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">Your Patronus</span></span>
+            </h2>
+            <div class="glass-panel p-6 md:p-10 rounded-2xl max-w-xl pointer-events-auto transform transition-transform hover:scale-[1.02] duration-500">
+                <p class="text-gray-300 leading-loose tracking-wide text-sm md:text-base">
+                    We weave complex mathematical algorithms into fluid, organic digital matter. As you descend, the digital void morphs to your intent. Immerse yourself in the architecture of the future.
+                </p>
+            </div>
+        </section>
+
+        <section class="h-screen w-full flex flex-col justify-center items-end text-right px-8 md:px-32">
+            <h2 class="text-3xl md:text-6xl lg:text-7xl font-bold tracking-[0.1em] uppercase mb-8 leading-tight">
+                <span class="text-mask"><span class="text-reveal">Sustainable</span></span><br>
+                <span class="text-mask"><span class="text-reveal text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-600">Horizons</span></span>
+            </h2>
+            <div class="glass-panel p-6 md:p-10 rounded-2xl max-w-xl pointer-events-auto transform transition-transform hover:scale-[1.02] duration-500">
+                <p class="text-gray-300 leading-loose tracking-wide text-sm md:text-base">
+                    Building tomorrow's digital ecosystem with highly optimized vertex shaders, efficient geometry manipulation, and stunning post-processing pipelines.
+                </p>
+            </div>
+        </section>
+        
+        <div class="h-32 w-full"></div>
+    </main>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import gsap from 'gsap';
+        import ScrollTrigger from 'gsap/ScrollTrigger';
+        import Lenis from '@studio-freight/lenis';
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        /* =========================================
+           1. CORE SETUP & POST-PROCESSING
+        ========================================= */
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.03); // Blend particles into the dark background
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 18;
+
+        const renderer = new THREE.WebGLRenderer({ powerPreference: "high-performance", antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
+        renderer.setClearColor(0x050505, 1);
+        container.appendChild(renderer.domElement);
+
+        // Effect Composer for Cinematic Bloom
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.5,   // strength
+            0.4,   // radius
+            0.1    // threshold (lower means darker things glow)
+        );
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        /* =========================================
+           2. PARTICLE GEOMETRY & MATH
+        ========================================= */
+        const PARTICLE_COUNT = 45000;
+        const geometry = new THREE.BufferGeometry();
+
+        // Arrays to hold the coordinates for our 3 distinct morph states
+        const posWave = new Float32Array(PARTICLE_COUNT * 3);
+        const posVortex = new Float32Array(PARTICLE_COUNT * 3);
+        const posSphere = new Float32Array(PARTICLE_COUNT * 3);
+        const randoms = new Float32Array(PARTICLE_COUNT);
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const i3 = i * 3;
+            randoms[i] = Math.random();
+
+            // STATE 1: Liquid Wave (Grid-based with sine displacement handled in shader)
+            // Distribute on an XZ plane
+            const gridCols = Math.sqrt(PARTICLE_COUNT);
+            const x = ((i % gridCols) / gridCols - 0.5) * 40;
+            const z = (Math.floor(i / gridCols) / gridCols - 0.5) * 40;
+            posWave[i3] = x;
+            posWave[i3 + 1] = (Math.random() - 0.5) * 0.5; // Slight Y variation
+            posWave[i3 + 2] = z;
+
+            // STATE 2: The Vortex (Tornado-like spiral)
+            const radius = Math.random() * 8 + 1;
+            const angle = Math.random() * Math.PI * 2 * 10; // Multiple turns
+            const height = (Math.random() - 0.5) * 30;
+            posVortex[i3] = Math.cos(angle + height) * radius * (1 - Math.abs(height) / 20); // Tapering
+            posVortex[i3 + 1] = height;
+            posVortex[i3 + 2] = Math.sin(angle + height) * radius * (1 - Math.abs(height) / 20);
+
+            // STATE 3: Abstract Sphere (Fibonacci sphere distribution for even spread)
+            const phi = Math.acos(-1 + (2 * i) / PARTICLE_COUNT);
+            const theta = Math.sqrt(PARTICLE_COUNT * Math.PI) * phi;
+            const rSphere = 8 + (Math.random() * 2); // Core sphere + fuzzy outer shell
+            posSphere[i3] = rSphere * Math.cos(theta) * Math.sin(phi);
+            posSphere[i3 + 1] = rSphere * Math.sin(theta) * Math.sin(phi);
+            posSphere[i3 + 2] = rSphere * Math.cos(phi);
+        }
+
+        geometry.setAttribute('posWave', new THREE.BufferAttribute(posWave, 3));
+        geometry.setAttribute('posVortex', new THREE.BufferAttribute(posVortex, 3));
+        geometry.setAttribute('posSphere', new THREE.BufferAttribute(posSphere, 3));
+        geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
+
+        /* =========================================
+           3. CUSTOM GLSL SHADERS
+        ========================================= */
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uProgress: { value: 0 }, // Scroll progress (0 to 1)
+                uMouse: { value: new THREE.Vector2(0, 0) }, // Normalized mouse
+                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: `
+                uniform float uTime;
+                uniform float uProgress;
+                uniform vec2 uMouse;
+                
+                attribute vec3 posWave;
+                attribute vec3 posVortex;
+                attribute vec3 posSphere;
+                attribute float aRandom;
+                
+                varying vec3 vColor;
+                varying float vAlpha;
+
+                // Color Palettes matching the UI
+                vec3 colWave = vec3(0.0, 0.8, 1.0);     // Cyan
+                vec3 colVortex = vec3(0.7, 0.2, 1.0);   // Purple/Pink
+                vec3 colSphere = vec3(0.0, 1.0, 0.5);   // Emerald
+
+                void main() {
+                    vec3 targetPos;
+                    vec3 finalColor;
+
+                    // Smooth interpolation between the 3 geometry states
+                    if (uProgress < 0.5) {
+                        float t = smoothstep(0.0, 1.0, uProgress * 2.0);
+                        targetPos = mix(posWave, posVortex, t);
+                        finalColor = mix(colWave, colVortex, t);
+                    } else {
+                        float t = smoothstep(0.0, 1.0, (uProgress - 0.5) * 2.0);
+                        targetPos = mix(posVortex, posSphere, t);
+                        finalColor = mix(colVortex, colSphere, t);
+                    }
+
+                    // Continuous Organic Movement
+                    // We apply a sine wave displacement based on the current interpolated position
+                    targetPos.y += sin(uTime * 0.8 + targetPos.x * 0.5) * 0.5;
+                    targetPos.x += cos(uTime * 0.5 + targetPos.y * 0.5) * 0.5;
+                    targetPos.z += sin(uTime * 0.6 + targetPos.z * 0.5) * 0.5;
+
+                    // Mouse Interaction (Gravitational Repel)
+                    // Map normalized mouse (-1 to 1) to an approximate world space bounds
+                    vec2 mouseWorld = uMouse * vec2(15.0, 10.0);
+                    float distToMouse = distance(targetPos.xy, mouseWorld);
+                    
+                    // The closer the vertex is to the mouse, the stronger the push
+                    float repelForce = smoothstep(4.0, 0.0, distToMouse) * 2.5;
+                    vec2 repelDirection = normalize(targetPos.xy - mouseWorld);
+                    targetPos.xy += repelDirection * repelForce;
+
+                    vec4 mvPosition = modelViewMatrix * vec4(targetPos, 1.0);
+                    gl_Position = projectionMatrix * mvPosition;
+
+                    // Size Attenuation (particles get smaller further away)
+                    gl_PointSize = (4.0 + aRandom * 4.0) * (15.0 / -mvPosition.z);
+
+                    // Pass data to fragment shader
+                    vColor = finalColor + (aRandom * 0.3); // Add slight color variation
+                    vAlpha = 0.4 + (aRandom * 0.6);
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vColor;
+                varying float vAlpha;
+
+                void main() {
+                    // Create a soft glowing circle instead of a harsh square
+                    float dist = distance(gl_PointCoord, vec2(0.5));
+                    if (dist > 0.5) discard; // Crop to circle
+                    
+                    // Feather the edges for a glowing particle look
+                    float alpha = smoothstep(0.5, 0.1, dist) * vAlpha;
+                    
+                    gl_FragColor = vec4(vColor, alpha);
+                }
+            `,
+            transparent: true,
+            depthWrite: false, // Prevents particles from occluding each other sharply
+            blending: THREE.AdditiveBlending // Essential for the high-end cyber neon glow
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        // Rotate initial wave to face the camera
+        particles.rotation.x = Math.PI * 0.1; 
+        scene.add(particles);
+
+        /* =========================================
+           4. INTERACTIONS & SCROLL (GSAP + LENIS)
+        ========================================= */
+        
+        // Mouse Tracking with Linear Interpolation (Lerp) for smoothness
+        const mouse = { current: new THREE.Vector2(0, 0), target: new THREE.Vector2(0, 0) };
+        
+        window.addEventListener('mousemove', (e) => {
+            // Normalize mouse coordinates to -1 to +1
+            mouse.target.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.target.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // Initialize Lenis Smooth Scroll
+        const lenis = new Lenis({
+            duration: 1.5, // Butter smooth inertia
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+        });
+
+        // Sync GSAP ScrollTrigger with Lenis
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time) => { lenis.raf(time * 1000) });
+        gsap.ticker.lagSmoothing(0);
+
+        // ScrollTrigger to drive WebGL Morphing Uniform
+        ScrollTrigger.create({
+            trigger: "#scroll-wrapper",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                // self.progress goes from 0 to 1 over the document height
+                gsap.to(material.uniforms.uProgress, {
+                    value: self.progress,
+                    duration: 0.5,
+                    ease: "power2.out",
+                    overwrite: "auto"
+                });
+
+                // Dynamically rotate the entire particle system based on scroll
+                gsap.to(particles.rotation, {
+                    y: self.progress * Math.PI * 2,
+                    x: Math.PI * 0.1 + (self.progress * Math.PI * 0.2),
+                    duration: 1,
+                    ease: "power1.out",
+                    overwrite: "auto"
+                });
+            }
+        });
+
+        // GSAP Typography Animations (Stagger Reveals)
+        const sections = document.querySelectorAll('section');
+        sections.forEach((section) => {
+            const reveals = section.querySelectorAll('.text-reveal');
+            
+            ScrollTrigger.create({
+                trigger: section,
+                start: "top 70%", // Trigger when section is 70% in view
+                onEnter: () => {
+                    gsap.to(reveals, {
+                        y: "0%",
+                        opacity: 1,
+                        duration: 1.2,
+                        stagger: 0.15,
+                        ease: "power4.out"
+                    });
+                },
+                // Optional: reset on leave back for replayability
+                onLeaveBack: () => {
+                    gsap.to(reveals, {
+                        y: "110%",
+                        opacity: 0,
+                        duration: 0.8,
+                        ease: "power3.in"
+                    });
+                }
+            });
+        });
+
+        /* =========================================
+           5. RESIZE & RENDER LOOP
+        ========================================= */
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const elapsedTime = clock.getElapsedTime();
+            
+            // Update time uniform for continuous organic movement
+            material.uniforms.uTime.value = elapsedTime;
+
+            // Lerp mouse for silky smooth gravitational interactions
+            mouse.current.lerp(mouse.target, 0.08);
+            material.uniforms.uMouse.value.copy(mouse.current);
+
+            // Render via composer for Bloom
+            composer.render();
+            
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+      </html>
+      
