@@ -10,10 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-  <!-- FIX: FontAwesome added for GitHub, LinkedIn icons -->
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-  <!-- Lucide Icons - abhi bhi rakhe hain navbar/other ke liye -->
+  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
   <!-- Three.js -->
@@ -25,6 +25,10 @@
 
   <!-- Particles.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+
+  <!-- Firebase v9 compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -38,7 +42,6 @@
         <span class="nav-name">SHIVA SAINI</span>
       </a>
 
-      <!-- Hamburger (mobile) -->
       <button class="hamburger" id="hamburger" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
@@ -48,6 +51,8 @@
         <li><a href="#about"    class="nav-link">About</a></li>
         <li><a href="#skills"   class="nav-link">Skills</a></li>
         <li><a href="#projects" class="nav-link">Projects</a></li>
+        <li><a href="#ai-chat"  class="nav-link">AI Chat</a></li>
+        <li><a href="#feedback" class="nav-link">Feedback</a></li>
         <li><a href="#contact"  class="nav-link">Contact</a></li>
         <li>
           <a href="resume.pdf" class="nav-resume" download>
@@ -61,41 +66,28 @@
 
   <!-- ── HERO ── -->
   <section class="hero" id="home">
-
-    <!-- Blinking stars overlay (particles.js) -->
     <div id="particles-js"></div>
-
-    <!-- Three.js Moon + deep space starfield -->
     <canvas id="planet-canvas"></canvas>
 
-    <!-- Hero content -->
     <div class="hero-content">
-      
-
-
       <div class="hero-logo-wrap">
         <img src="favicon.png" alt="SS" class="hero-logo" id="heroLogo" />
         <div class="hero-glow"></div>
       </div>
 
-      <!-- UPGRADE 2: Backdrop blur wrapper for readability -->
       <div class="hero-text-wrap">
         <h1 class="hero-name" id="heroName">SHIVA SAINI</h1>
-
-        <!-- UPGRADE 3: Typewriter effect -->
         <p class="hero-title" id="heroTitle">
           <span class="title-line"></span>
           <span id="typewriter"></span>
           <span class="title-line"></span>
         </p>
-
         <p class="hero-desc" id="heroDesc">
           I build modern, responsive and scalable web<br />
           applications with clean code and great user experiences.
         </p>
       </div>
 
-      <!-- UPGRADE 4: Two CTA Buttons -->
       <div class="hero-btn-group" id="heroBtnGroup">
         <a href="#projects" class="hero-btn hero-btn-primary">
           View My Work
@@ -107,7 +99,6 @@
         </a>
       </div>
 
-      <!-- FIX + UPGRADE 5: Social icons with FontAwesome + labels -->
       <div class="hero-socials" id="heroSocials">
         <a href="https://github.com/yourusername" target="_blank" aria-label="GitHub" class="social-icon">
           <i class="fa-brands fa-github"></i>
@@ -124,9 +115,7 @@
       </div>
     </div>
 
-    <!-- Scroll hint -->
     <div class="scroll-hint" id="scrollHint">
-
       <div class="scroll-line"></div>
     </div>
   </section>
@@ -169,12 +158,22 @@
         <div class="skill-card reveal" data-delay="200">
           <i data-lucide="database" class="skill-icon"></i>
           <h3>Database</h3>
-          <p>MongoDB, PostgreSQL, MySQL, Redis</p>
+          <p>MongoDB, PostgreSQL, MySQL, Redis, Firebase</p>
         </div>
         <div class="skill-card reveal" data-delay="300">
           <i data-lucide="cloud" class="skill-icon"></i>
           <h3>DevOps</h3>
-          <p>Docker, AWS, CI/CD, Git, Linux</p>
+          <p>Docker, AWS, CI/CD, Git, Vercel, Linux</p>
+        </div>
+        <div class="skill-card reveal" data-delay="400">
+          <i data-lucide="cpu" class="skill-icon"></i>
+          <h3>AI / ML</h3>
+          <p>OpenRouter, LangChain, Prompt Engineering, RAG</p>
+        </div>
+        <div class="skill-card reveal" data-delay="500">
+          <i data-lucide="box" class="skill-icon"></i>
+          <h3>3D & Motion</h3>
+          <p>Three.js, WebGL, GSAP, Framer Motion, Lenis</p>
         </div>
       </div>
     </div>
@@ -186,22 +185,25 @@
       <p class="section-eyebrow reveal">Work</p>
       <h2 class="section-title reveal">Projects</h2>
       <div class="projects-grid">
-        <div class="project-card reveal">
+
+        <div class="project-card reveal featured-card">
           <div class="project-num">01</div>
+          <div class="project-badge">Featured</div>
           <h3>E-Commerce Platform</h3>
-          <p>Full-stack shop with real-time inventory, payments & admin dashboard.</p>
+          <p>Full-stack shop with real-time inventory, Stripe payments, admin dashboard & order tracking system.</p>
           <div class="project-tags">
-            <span>Next.js</span><span>Node</span><span>MongoDB</span>
+            <span>Next.js</span><span>Node</span><span>MongoDB</span><span>Stripe</span>
           </div>
           <div class="project-links">
             <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
             <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
           </div>
         </div>
+
         <div class="project-card reveal">
           <div class="project-num">02</div>
           <h3>SaaS Dashboard</h3>
-          <p>Analytics platform with real-time charts, team management & billing.</p>
+          <p>Analytics platform with real-time charts, team management, role-based access & subscription billing.</p>
           <div class="project-tags">
             <span>React</span><span>TypeScript</span><span>PostgreSQL</span>
           </div>
@@ -210,16 +212,177 @@
             <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
           </div>
         </div>
+
         <div class="project-card reveal">
           <div class="project-num">03</div>
-          <h3>AI Chat App</h3>
-          <p>Conversational AI interface with context memory & streaming responses.</p>
+          <h3>Shanu AI</h3>
+          <p>Conversational AI with Hinglish persona "Chiku", context memory, streaming responses & OpenRouter integration.</p>
           <div class="project-tags">
-            <span>Python</span><span>FastAPI</span><span>React</span>
+            <span>JavaScript</span><span>OpenRouter</span><span>Firebase</span>
           </div>
           <div class="project-links">
             <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
             <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
+          </div>
+        </div>
+
+        <div class="project-card reveal">
+          <div class="project-num">04</div>
+          <h3>Nexus AI Code Editor</h3>
+          <p>Browser-based AI code editor with Monaco, syntax highlighting, AI completion & IndexedDB file system.</p>
+          <div class="project-tags">
+            <span>Monaco</span><span>PWA</span><span>IndexedDB</span>
+          </div>
+          <div class="project-links">
+            <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
+            <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
+          </div>
+        </div>
+
+        <div class="project-card reveal">
+          <div class="project-num">05</div>
+          <h3>3D Portfolio</h3>
+          <p>Cinematic portfolio with WebGL particle fields, GLSL shaders, scroll-bound morphing & post-processing.</p>
+          <div class="project-tags">
+            <span>Three.js</span><span>GSAP</span><span>Lenis</span>
+          </div>
+          <div class="project-links">
+            <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
+            <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
+          </div>
+        </div>
+
+        <div class="project-card reveal">
+          <div class="project-num">06</div>
+          <h3>Mission Control Weather</h3>
+          <p>Dark-space aesthetic weather app with geolocation, animated backgrounds, unit toggle & recent search history.</p>
+          <div class="project-tags">
+            <span>JavaScript</span><span>REST API</span><span>LocalStorage</span>
+          </div>
+          <div class="project-links">
+            <a href="#"><i data-lucide="github" class="icon-sm"></i> Code</a>
+            <a href="#"><i data-lucide="external-link" class="icon-sm"></i> Live</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── AI CHAT SECTION ── -->
+  <section class="section section-alt" id="ai-chat">
+    <div class="container">
+      <p class="section-eyebrow reveal">Powered by AI</p>
+      <h2 class="section-title reveal">Chat With My AI</h2>
+      <p class="section-sub reveal">Ask me anything — my AI assistant knows my work, skills & projects.</p>
+
+      <div class="chat-wrapper reveal">
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="chat-header-info">
+            <div class="chat-avatar">
+              <span>SS</span>
+              <div class="chat-status-dot"></div>
+            </div>
+            <div>
+              <p class="chat-agent-name">Shiva's AI</p>
+              <p class="chat-agent-status">Online · Powered by OpenRouter</p>
+            </div>
+          </div>
+          <button class="chat-clear-btn" id="chatClearBtn" title="Clear conversation">
+            <i data-lucide="trash-2" class="icon-sm"></i>
+          </button>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-message bot-message">
+            <div class="msg-bubble">
+              👋 Hey! I'm Shiva's AI assistant. Ask me about his projects, skills, experience, or how to hire him!
+            </div>
+            <span class="msg-time">Just now</span>
+          </div>
+        </div>
+
+        <!-- Suggested Questions -->
+        <div class="chat-suggestions" id="chatSuggestions">
+          <button class="suggestion-chip" data-q="What projects has Shiva built?">Projects?</button>
+          <button class="suggestion-chip" data-q="What are Shiva's main skills?">Skills?</button>
+          <button class="suggestion-chip" data-q="Is Shiva available for freelance?">Hire him?</button>
+          <button class="suggestion-chip" data-q="Tell me about his AI projects">AI work?</button>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+          <textarea
+            id="chatInput"
+            class="chat-input"
+            placeholder="Ask me anything about Shiva..."
+            rows="1"
+          ></textarea>
+          <button class="chat-send-btn" id="chatSendBtn" aria-label="Send">
+            <i data-lucide="send" class="icon-sm"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEEDBACK SECTION ── -->
+  <section class="section" id="feedback">
+    <div class="container">
+      <p class="section-eyebrow reveal">Leave a Review</p>
+      <h2 class="section-title reveal">Feedback</h2>
+      <p class="section-sub reveal">Worked with me or seen my work? I'd love to hear from you.</p>
+
+      <div class="feedback-layout">
+        <!-- Feedback Form -->
+        <div class="feedback-form-wrap reveal">
+          <div class="feedback-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Your Name</label>
+                <input type="text" id="fbName" class="form-input" placeholder="John Doe" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="fbEmail" class="form-input" placeholder="john@example.com" />
+              </div>
+            </div>
+
+            <!-- Star Rating -->
+            <div class="form-group">
+              <label class="form-label">Rating</label>
+              <div class="star-rating" id="starRating">
+                <span class="star" data-val="1">★</span>
+                <span class="star" data-val="2">★</span>
+                <span class="star" data-val="3">★</span>
+                <span class="star" data-val="4">★</span>
+                <span class="star" data-val="5">★</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Your Message</label>
+              <textarea id="fbMessage" class="form-input form-textarea" placeholder="Share your experience working with Shiva..." rows="4"></textarea>
+            </div>
+
+            <button class="fb-submit-btn" id="fbSubmitBtn">
+              <span id="fbBtnText">Submit Feedback</span>
+              <i data-lucide="send" class="icon-sm" id="fbBtnIcon"></i>
+            </button>
+            <p class="fb-status" id="fbStatus"></p>
+          </div>
+        </div>
+
+        <!-- Feedback Display -->
+        <div class="feedback-list-wrap reveal" data-delay="150">
+          <h3 class="feedback-list-title">What people say</h3>
+          <div class="feedback-list" id="feedbackList">
+            <div class="feedback-skeleton">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -255,6 +418,7 @@
       <p class="footer-copy">© 2026 Shiva Saini. Crafted with precision.</p>
     </div>
   </footer>
+
   <script src="script.js"></script>
 </body>
 </html>
