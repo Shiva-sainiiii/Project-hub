@@ -314,3 +314,317 @@ gsap.utils.toArray('.section').forEach(section => {
 // on both desktop and mobile. Duplicate GSAP from() was
 // overriding IntersectionObserver and leaving cards invisible
 // on mobile where ScrollTrigger fails to fire.
+
+/* ══════════════════════════════════════════════════
+   AI CHAT — OpenRouter via Vercel Serverless
+   /api/chat endpoint reads OPENROUTER_API_KEY env var
+══════════════════════════════════════════════════ */
+
+(function initChat() {
+  const messagesEl   = document.getElementById('chatMessages');
+  const inputEl      = document.getElementById('chatInput');
+  const sendBtn      = document.getElementById('chatSendBtn');
+  const clearBtn     = document.getElementById('chatClearBtn');
+  const suggestionsEl = document.getElementById('chatSuggestions');
+
+  if (!messagesEl) return;
+
+  // Conversation history for context
+  const history = [];
+
+  const SYSTEM_PROMPT = `You are Shiva Saini's AI portfolio assistant. Be helpful, concise, and friendly.
+Shiva Saini is a Full Stack Developer and BCA student at Pt NRS College, Rohtak (2028 graduation).
+Skills: HTML, CSS, JavaScript, React, Next.js, TypeScript, Node.js, Express, Firebase, MongoDB, PostgreSQL, Three.js, GSAP, REST APIs, Vercel, Docker, Git, OpenRouter API integration.
+Projects: E-Commerce Platform (Next.js, Node, MongoDB), SaaS Dashboard (React, TypeScript), Shanu AI (Hinglish AI with Chiku persona, OpenRouter), Nexus AI Code Editor (Monaco, PWA, IndexedDB), 3D Portfolio (Three.js, GSAP, WebGL, GLSL shaders), Mission Control Weather App.
+Internships: CodSoft Pvt Ltd, Octanet Pvt Ltd, currently Maincrafts Technology.
+Portfolio: shivasainiportfolio.vercel.app | Available for freelance on Fiverr (landing pages).
+Keep answers short and direct. For hiring queries, direct them to the Contact section.`;
+
+  function getTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function appendMessage(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = `chat-message ${role === 'assistant' ? 'bot-message' : 'user-message'}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = text;
+    const time = document.createElement('span');
+    time.className = 'msg-time';
+    time.textContent = getTime();
+    wrap.appendChild(bubble);
+    wrap.appendChild(time);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return wrap;
+  }
+
+  function showTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-message bot-message';
+    wrap.id = 'typingIndicator';
+    wrap.innerHTML = `<div class="typing-indicator">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>`;
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage(text) {
+    if (!text.trim()) return;
+
+    // Hide suggestions after first send
+    suggestionsEl.style.display = 'none';
+
+    appendMessage('user', text);
+    history.push({ role: 'user', content: text });
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+    showTyping();
+
+    try {
+      // Calls /api/chat — Vercel serverless function reads OPENROUTER_API_KEY
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: SYSTEM_PROMPT,
+          messages: history
+        })
+      });
+
+      removeTyping();
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || 'API error');
+      }
+
+      const data = await res.json();
+      const reply = data.reply || 'Sorry, I could not get a response.';
+      appendMessage('assistant', reply);
+      history.push({ role: 'assistant', content: reply });
+
+    } catch (e) {
+      removeTyping();
+      appendMessage('assistant', '⚠️ Something went wrong. Please try again in a moment.');
+      console.error('Chat error:', e);
+    } finally {
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  // Send button
+  sendBtn.addEventListener('click', () => sendMessage(inputEl.value));
+
+  // Enter to send (Shift+Enter = new line)
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(inputEl.value);
+    }
+  });
+
+  // Auto-resize textarea
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  });
+
+  // Suggestion chips
+  document.querySelectorAll('.suggestion-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      sendMessage(chip.dataset.q);
+    });
+  });
+
+  // Clear conversation
+  clearBtn.addEventListener('click', () => {
+    messagesEl.innerHTML = `<div class="chat-message bot-message">
+      <div class="msg-bubble">👋 Hey! I'm Shiva's AI assistant. Ask me about his projects, skills, experience, or how to hire him!</div>
+      <span class="msg-time">Just now</span>
+    </div>`;
+    history.length = 0;
+    suggestionsEl.style.display = 'flex';
+  });
+
+})();
+
+
+/* ══════════════════════════════════════════════════
+   FEEDBACK — Firebase Firestore
+   Replace the config below with your project's config
+══════════════════════════════════════════════════ */
+
+(function initFeedback() {
+  // ── Firebase Config — apna config yahan daalo ──
+  const firebaseConfig = {
+    apiKey:            "YOUR_API_KEY",
+    authDomain:        "YOUR_PROJECT.firebaseapp.com",
+    projectId:         "YOUR_PROJECT_ID",
+    storageBucket:     "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId:             "YOUR_APP_ID"
+  };
+
+  // Prevent double-init if already loaded elsewhere
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const db = firebase.firestore();
+  const COLLECTION = 'portfolio_feedback';
+
+  const nameEl    = document.getElementById('fbName');
+  const emailEl   = document.getElementById('fbEmail');
+  const msgEl     = document.getElementById('fbMessage');
+  const submitBtn = document.getElementById('fbSubmitBtn');
+  const statusEl  = document.getElementById('fbStatus');
+  const listEl    = document.getElementById('feedbackList');
+
+  if (!listEl) return;
+
+  // ── Star Rating ──
+  let selectedRating = 0;
+  document.querySelectorAll('.star').forEach(star => {
+    star.addEventListener('mouseenter', () => {
+      const val = +star.dataset.val;
+      document.querySelectorAll('.star').forEach(s => {
+        s.classList.toggle('active', +s.dataset.val <= val);
+      });
+    });
+    star.addEventListener('mouseleave', () => {
+      document.querySelectorAll('.star').forEach(s => {
+        s.classList.toggle('active', +s.dataset.val <= selectedRating);
+      });
+    });
+    star.addEventListener('click', () => {
+      selectedRating = +star.dataset.val;
+      document.querySelectorAll('.star').forEach(s => {
+        s.classList.toggle('active', +s.dataset.val <= selectedRating);
+      });
+    });
+  });
+
+  // ── Submit ──
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      const name    = nameEl?.value.trim();
+      const email   = emailEl?.value.trim();
+      const message = msgEl?.value.trim();
+
+      if (!name || !message) {
+        setStatus('Please enter your name and message.', 'error');
+        return;
+      }
+      if (selectedRating === 0) {
+        setStatus('Please select a star rating.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      document.getElementById('fbBtnText').textContent = 'Submitting...';
+
+      try {
+        await db.collection(COLLECTION).add({
+          name,
+          email: email || 'anonymous',
+          message,
+          rating: selectedRating,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        setStatus('✓ Thank you for your feedback!', 'success');
+        nameEl.value = '';
+        emailEl.value = '';
+        msgEl.value = '';
+        selectedRating = 0;
+        document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+        loadFeedback();
+      } catch (err) {
+        console.error('Feedback error:', err);
+        setStatus('Something went wrong. Try again.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        document.getElementById('fbBtnText').textContent = 'Submit Feedback';
+      }
+    });
+  }
+
+  function setStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusEl.className = `fb-status ${type}`;
+    setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'fb-status'; }, 4000);
+  }
+
+  // ── Load & Render Feedback ──
+  async function loadFeedback() {
+    try {
+      const snap = await db.collection(COLLECTION)
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get();
+
+      if (snap.empty) {
+        listEl.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">No feedback yet. Be the first!</p>`;
+        return;
+      }
+
+      listEl.innerHTML = '';
+      snap.forEach(doc => {
+        const d = doc.data();
+        listEl.appendChild(createFeedbackCard(d));
+      });
+    } catch (e) {
+      listEl.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;">Could not load feedback.</p>`;
+      console.error('Load feedback error:', e);
+    }
+  }
+
+  function createFeedbackCard(d) {
+    const initials = d.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+    const stars    = '★'.repeat(d.rating) + '☆'.repeat(5 - d.rating);
+    const date     = d.createdAt?.toDate
+      ? d.createdAt.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+      : 'Recently';
+
+    const card = document.createElement('div');
+    card.className = 'feedback-card';
+    card.innerHTML = `
+      <div class="feedback-card-header">
+        <div class="fb-user">
+          <div class="fb-avatar">${initials}</div>
+          <div>
+            <p class="fb-name">${escapeHtml(d.name)}</p>
+            <p class="fb-date">${date}</p>
+          </div>
+        </div>
+        <span class="fb-stars">${stars}</span>
+      </div>
+      <p class="fb-text">${escapeHtml(d.message)}</p>
+    `;
+    return card;
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Load feedback on init
+  loadFeedback();
+
+})();
