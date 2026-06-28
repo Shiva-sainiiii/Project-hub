@@ -23,9 +23,10 @@
 /* ─────────────────────────────────────────────────────────────
    SETTINGS STORE
    Single source of truth for all user-configurable options.
-   Values are kept in memory (no localStorage — reset on refresh,
-   as requested). The Settings object is populated before Game()
-   is created, so Game can read it on construction.
+   Values are kept in memory (reset on refresh).
+   Note: High score is separately persisted to localStorage.
+   The Settings object is populated before Game() is created,
+   so Game can read it on construction.
 ───────────────────────────────────────────────────────────── */
 const Settings = {
   muted:       false,
@@ -38,9 +39,20 @@ const Settings = {
 ───────────────────────────────────────────────────────────── */
 const HS_KEY = 'snakeRush_bestScore';
 const HighScore = {
-  get()  { return parseInt(localStorage.getItem(HS_KEY) || '0', 10); },
+  _cached: null,
+  get() {
+    if (this._cached === null) {
+      this._cached = parseInt(localStorage.getItem(HS_KEY) || '0', 10);
+    }
+    return this._cached;
+  },
   save(n) {
-    if (n > this.get()) localStorage.setItem(HS_KEY, String(n));
+    const current = this.get();
+    if (n > current) {
+      localStorage.setItem(HS_KEY, String(n));
+      this._cached = n;
+    }
+    return this._cached;
   },
 };
 
@@ -164,16 +176,16 @@ class AudioManager {
     this._biteCooldown   = 0;  // enemybite.mp3 cooldown
 
     this._tracks = {
-      bg:        'assets/bgmusic.mp3',
-      eat:       'assets/eat.mp3',
-      panic:     'assets/panic.mp3',
-      gameover:  'assets/gameover.mp3',
-      magnet:    'assets/magnet.mp3',
-      run:       'assets/run.mp3',
-      enemybite: 'assets/enemybite.mp3',
-      nearsnake: 'assets/nearsnake.mp3',
-      kill:      'assets/kill.mp3',
-      lifeline:  'assets/lifeline.mp3',
+      bg:        'bgmusic.mp3',
+      eat:       'eat.mp3',
+      panic:     'panic.mp3',
+      gameover:  'gameover.mp3',
+      magnet:    'magnet.mp3',
+      run:       'run.mp3',
+      enemybite: 'enemybite.mp3',
+      nearsnake: 'nearsnake.mp3',
+      kill:      'kill.mp3',
+      lifeline:  'lifeline.mp3',
     };
 
     const unlock = () => {
@@ -268,15 +280,13 @@ class AudioManager {
     }
   }
 
-  playEnemyBite(dt) {
-    this._biteCooldown -= dt || 0;
+  playEnemyBite() {
     if (this._biteCooldown > 0) return;
     this._play('enemybite', false, 0.9);
     this._biteCooldown = 0.8;   // 0.8 s cooldown
   }
 
-  playNearSnake(dt) {
-    this._nearCooldown -= dt || 0;
+  playNearSnake() {
     if (this._nearCooldown > 0) return;
     this._play('nearsnake', false, 0.6);
     this._nearCooldown = 1.5;   // 1.5 s cooldown — not too frequent
@@ -332,6 +342,12 @@ class AudioManager {
     } else {
       // Re-start ambient tracks that should be playing
       this.playBg();
+      // Re-check danger-zone and panic state via the exposed game reference
+      const game = window._game;
+      if (game) {
+        if (game._inDangerZone) this.startRun();
+        if (game.player && game.player.lives === 1 && game.player.alive) this.startPanic();
+      }
     }
   }
 }
@@ -348,13 +364,24 @@ class SpatialGrid {
   }
 
   _idx(x, y) {
-    const cx = Math.min(Math.floor(x / this.cellSize), this.cols - 1);
-    const cy = Math.min(Math.floor(y / this.cellSize), this.rows - 1);
+    const cx = Math.max(0, Math.min(Math.floor(x / this.cellSize), this.cols - 1));
+    const cy = Math.max(0, Math.min(Math.floor(y / this.cellSize), this.rows - 1));
     return cy * this.cols + cx;
   }
 
-  add(item)    { this.cells[this._idx(item.pos.x, item.pos.y)].add(item);    }
-  remove(item) { this.cells[this._idx(item.pos.x, item.pos.y)].delete(item); }
+  add(item) {
+    const idx = this._idx(item.pos.x, item.pos.y);
+    item._gridIdx = idx;
+    this.cells[idx].add(item);
+  }
+  remove(item) {
+    if (item._gridIdx !== undefined) {
+      this.cells[item._gridIdx].delete(item);
+      item._gridIdx = undefined;
+    } else {
+      this.cells[this._idx(item.pos.x, item.pos.y)].delete(item);
+    }
+  }
 
   query(x, y, r, out) {
     out.length = 0;
@@ -510,15 +537,15 @@ class Food {
       ctx.fillStyle = '#ff5f9e';
       ctx.fill();
 
-      // Heart icon via text
-      ctx.shadowBlur  = 0;
-      ctx.fillStyle   = '#fff';
-      ctx.font        = `bold ${Math.round(r * 1.3)}px sans-serif`;
-      ctx.textAlign   = 'center';
+      // Heart icon via text — save/restore prevents font/align/baseline leaking
+      ctx.save();
+      ctx.shadowBlur   = 0;
+      ctx.fillStyle    = '#fff';
+      ctx.font         = `bold ${Math.round(r * 1.3)}px sans-serif`;
+      ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('♥', sx, sy + 1);
-      ctx.textAlign    = 'start';
-      ctx.textBaseline = 'alphabetic';
+      ctx.restore();
     }
 
     ctx.globalAlpha = 1;  // always restore after drawing
@@ -975,7 +1002,7 @@ class AISnake extends Snake {
     if (!this.alive) return;
 
     const { nearbyFood, fleeTarget, pursueTarget, avoidNormal }
-      = this._sense(dt);
+      = this._sense();
 
     this.state = this._evalFSM(dt, nearbyFood, fleeTarget, pursueTarget, avoidNormal);
 
@@ -994,7 +1021,7 @@ class AISnake extends Snake {
     this._grow();
   }
 
-  _sense(dt) {
+  _sense() {
     const nearbyFood = this.foodGrid.query(
       this.head.x, this.head.y,
       this.FOOD_RADIUS,
@@ -1185,6 +1212,14 @@ class AISnake extends Snake {
    index twice in a row. Called on spawn & respawn.
 ───────────────────────────────────────────────────────────── */
 let _lastAIPaletteIdx = -1;
+const AI_PALETTES = [
+  ['#f56a6a', '#ff9a9a'],  ['#a56aff', '#d0a5ff'],
+  ['#ffb347', '#ffd78a'],  ['#6ae0ff', '#a8eeff'],
+  ['#ff6ab8', '#ffa8d8'],  ['#c8ff6a', '#e5ff9a'],
+  ['#ff6a6a', '#ffaaaa'],  ['#6affcc', '#a8ffe0'],
+  ['#ff8c6a', '#ffba9a'],  ['#6a8cff', '#9ab0ff'],
+];
+
 function randomAIPalette() {
   let idx;
   do {
@@ -1193,13 +1228,6 @@ function randomAIPalette() {
   _lastAIPaletteIdx = idx;
   return AI_PALETTES[idx];
 }
-const AI_PALETTES = [
-  ['#f56a6a', '#ff9a9a'],  ['#a56aff', '#d0a5ff'],
-  ['#ffb347', '#ffd78a'],  ['#6ae0ff', '#a8eeff'],
-  ['#ff6ab8', '#ffa8d8'],  ['#c8ff6a', '#e5ff9a'],
-  ['#ff6a6a', '#ffaaaa'],  ['#6affcc', '#a8ffe0'],
-  ['#ff8c6a', '#ffba9a'],  ['#6a8cff', '#9ab0ff'],
-];
 
 const FOOD_COLORS = [
   '#ff5e57','#ffa41b','#ffdd00','#7bff6a',
@@ -1256,6 +1284,7 @@ class Game {
     const resize = () => {
       this.canvas.width  = window.innerWidth;
       this.canvas.height = window.innerHeight;
+      this._bgTile = null;   // invalidate cached dot-grid tile on resize
     };
     window.addEventListener('resize', resize);
     resize();
@@ -1270,7 +1299,7 @@ class Game {
       this._pointer.y = e.clientY;
     });
 
-    this.canvas.addEventListener('mousedown',  () => { if (this.player) this.player.boosting = true;  });
+    this.canvas.addEventListener('mousedown',  () => { if (this.running && this.player) this.player.boosting = true;  });
     this.canvas.addEventListener('mouseup',    () => { if (this.player) this.player.boosting = false; });
     this.canvas.addEventListener('mouseleave', () => { if (this.player) this.player.boosting = false; });
 
@@ -1278,7 +1307,7 @@ class Game {
       const t = e.touches[0];
       this._pointer.x = t.clientX;
       this._pointer.y = t.clientY;
-      if (this.player) this.player.boosting = true;
+      if (this.running && this.player) this.player.boosting = true;
     }, { passive: true });
 
     this.canvas.addEventListener('touchmove', e => {
@@ -1301,6 +1330,7 @@ class Game {
       Settings.muted = !Settings.muted;
       muteBtn.textContent = Settings.muted ? 'OFF' : 'ON';
       muteBtn.classList.toggle('active', !Settings.muted);
+      muteBtn.setAttribute('aria-pressed', String(Settings.muted));
       this.audio.applyMuteSetting();
     });
 
@@ -1350,6 +1380,7 @@ class Game {
     }
 
     this.foods = [];
+    this._lifelineCount = 0;   // maintained counter — avoids O(n) filter on every spawn
     for (let i = 0; i < FOOD_COUNT; i++) this._spawnFood();
 
     // Reset designer palette
@@ -1384,9 +1415,8 @@ class Game {
     let type = forceType;
     if (!type) {
       const roll = Math.random();
-      // Count active lifelines to enforce the cap
-      const lifelineCount = this.foods.filter(f => f.type === FOOD_TYPE.LIFELINE).length;
-      if (roll < LIFELINE_SPAWN_RATE && lifelineCount < LIFELINE_MAX_ON_MAP) {
+      // Use maintained counter instead of O(n) filter
+      if (roll < LIFELINE_SPAWN_RATE && this._lifelineCount < LIFELINE_MAX_ON_MAP) {
         type = FOOD_TYPE.LIFELINE;
       } else if (roll < LIFELINE_SPAWN_RATE + POWERUP_SPAWN_RATE) {
         type = FOOD_TYPE.MAGNET;
@@ -1400,11 +1430,13 @@ class Game {
     const f = new Food(fx, fy, col, type);
     this.foods.push(f);
     this.foodGrid.add(f);
+    if (type === FOOD_TYPE.LIFELINE) this._lifelineCount++;
     return f;
   }
 
   _removeFood(food) {
     this.foodGrid.remove(food);
+    if (food.type === FOOD_TYPE.LIFELINE) this._lifelineCount--;
     const idx = this.foods.indexOf(food);
     if (idx !== -1) {
       this.foods[idx] = this.foods[this.foods.length - 1];
@@ -1483,7 +1515,7 @@ class Game {
           break;
         }
       }
-      if (anyNear) this.audio.playNearSnake(dt);
+      if (anyNear) this.audio.playNearSnake();
     }
 
     // ── MAGNET pull ───────────────────────────────────────
@@ -1550,14 +1582,15 @@ class Game {
             continue;
           }
           if (food.type === FOOD_TYPE.LIFELINE) {
-            // Only replenish if at least one life was lost
+            // Only consume the orb if the player actually needs a life
             if (this.player.lives < PLAYER_LIVES) {
               this.player.lives++;
               this._updateLivesHUD();
+              this.audio.playLifeline();   // ← lifeline.mp3 only on actual pickup
+              eaten.push(food);
+              // Do NOT respawn another lifeline — let the lottery handle it
             }
-            this.audio.playLifeline();   // ← lifeline.mp3
-            eaten.push(food);
-            // Do NOT respawn another lifeline — let the lottery handle it
+            // At full health: leave it on the map, play no sound
             continue;
           }
         }
@@ -1645,12 +1678,15 @@ class Game {
     p.pos.y = safeY;
     p.dir   = new Vector2(1, 0);
     p.alive = true;
+    p._growBuffer = 0;   // clear stale growth so snake doesn't phantom-grow after respawn
 
     p.magnetTimer = 0;
     p.attackTimer = 0;
     p.iFrameTimer = IFRAME_DURATION;
 
-    this.audio.playLifeline();   // ← lifeline.mp3
+    // Neutral respawn sound — playEat at low volume, NOT playLifeline
+    // (playLifeline is reserved exclusively for eating the Lifeline orb)
+    this.audio.playEat();
   }
 
   /* ── KILL SNAKE ─────────────────────────────────────────── */
@@ -1719,13 +1755,42 @@ class Game {
 
     const playerInAttack = this.player.alive && this.player.attackTimer > 0;
 
+    // Broad-phase: bucket snake heads into a coarse spatial grid
+    // so we only check pairs whose heads are within interaction range
+    const BUCKET_SIZE = 1100;   // slightly > max interaction range (1000)
+    const headBuckets = new Map();
+    for (let a = 0; a < this.snakes.length; a++) {
+      const sa = this.snakes[a];
+      if (!sa.alive) continue;
+      const bx = Math.floor(sa.head.x / BUCKET_SIZE);
+      const by = Math.floor(sa.head.y / BUCKET_SIZE);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const key = `${bx + dx},${by + dy}`;
+          if (!headBuckets.has(key)) headBuckets.set(key, []);
+          headBuckets.get(key).push(a);
+        }
+      }
+    }
+
+    const checkedPairs = new Set();
+
     for (let a = 0; a < this.snakes.length; a++) {
       const sa = this.snakes[a];
       if (!sa.alive || killSet.has(sa)) continue;
       if (sa === this.player && this.player.invincible) continue;
 
-      for (let b = 0; b < this.snakes.length; b++) {
+      const bx = Math.floor(sa.head.x / BUCKET_SIZE);
+      const by = Math.floor(sa.head.y / BUCKET_SIZE);
+      const key = `${bx},${by}`;
+      const candidates = headBuckets.get(key) || [];
+
+      for (const b of candidates) {
         if (a === b) continue;
+        const pairKey = a < b ? `${a},${b}` : `${b},${a}`;
+        if (checkedPairs.has(pairKey)) continue;
+        checkedPairs.add(pairKey);
+
         const sb = this.snakes[b];
         if (!sb.alive || killSet.has(sb)) continue;
 
@@ -1737,11 +1802,13 @@ class Game {
           if (a < b) {
             const sizeDiff = sa.segments.length - sb.segments.length;
             if (sizeDiff > H2H_UPSET_THRESHOLD) {
-              killSet.add(sa);
-              if (sb === this.player) playerKillSet.add(sa);
-            } else if (sizeDiff < -H2H_UPSET_THRESHOLD) {
+              // sa is BIGGER → sb (the smaller) dies
               killSet.add(sb);
               if (sa === this.player) playerKillSet.add(sb);
+            } else if (sizeDiff < -H2H_UPSET_THRESHOLD) {
+              // sb is BIGGER → sa (the smaller) dies
+              killSet.add(sa);
+              if (sb === this.player) playerKillSet.add(sa);
             } else {
               killSet.add(sa);
               killSet.add(sb);
@@ -1750,7 +1817,7 @@ class Game {
           continue;
         }
 
-        // ── Head-vs-Body ─────────────────────────────────────
+        // ── Head-vs-Body (sa head → sb body) ─────────────────
         for (let s = 1; s < sb.segments.length; s++) {
           if (Vector2.distSq(sa.head, sb.segments[s]) >= KILL_DSQ) continue;
 
@@ -1759,10 +1826,25 @@ class Game {
             shatterList.push({ snake: sb, fromIndex: s });
           } else if (sb === this.player && sa !== this.player && !this.player.invincible) {
             // Enemy head hit player body → enemybite.mp3
-            this.audio.playEnemyBite(0);
+            this.audio.playEnemyBite();
             killSet.add(sa);
           } else {
             killSet.add(sa);
+          }
+          break;
+        }
+
+        // ── Head-vs-Body (sb head → sa body) ─────────────────
+        for (let s = 1; s < sa.segments.length; s++) {
+          if (Vector2.distSq(sb.head, sa.segments[s]) >= KILL_DSQ) continue;
+
+          if (sb === this.player && playerInAttack && sa !== this.player) {
+            shatterList.push({ snake: sa, fromIndex: s });
+          } else if (sa === this.player && sb !== this.player && !this.player.invincible) {
+            this.audio.playEnemyBite();
+            killSet.add(sb);
+          } else {
+            killSet.add(sb);
           }
           break;
         }
@@ -1815,9 +1897,8 @@ class Game {
     this.running = false;
     this._inDangerZone = false;
 
-    // Persist high score before showing final screen
-    HighScore.save(this.player.score);
-    const best = HighScore.get();
+    // Persist high score and get the current best in one operation
+    const best = HighScore.save(this.player.score);
 
     this.finalScore.textContent = this.player.score;
     // Show best score line
@@ -1883,18 +1964,31 @@ class Game {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const gridSpacing = 40;
-    ctx.fillStyle = 'rgba(80,140,200,0.11)';
+
+    // Cache the dot-grid tile to an OffscreenCanvas so we only draw
+    // ~1300 arcs once per resize, not once per frame.
+    if (!this._bgTile ||
+        this._bgTile.width  !== canvas.width  + gridSpacing * 2 ||
+        this._bgTile.height !== canvas.height + gridSpacing * 2) {
+
+      const tw = canvas.width  + gridSpacing * 2;
+      const th = canvas.height + gridSpacing * 2;
+      const oc  = new OffscreenCanvas(tw, th);
+      const oc2 = oc.getContext('2d');
+      oc2.fillStyle = 'rgba(80,140,200,0.11)';
+      for (let x = 0; x < tw; x += gridSpacing) {
+        for (let y = 0; y < th; y += gridSpacing) {
+          oc2.beginPath();
+          oc2.arc(x, y, 1.2, 0, Math.PI * 2);
+          oc2.fill();
+        }
+      }
+      this._bgTile = oc;
+    }
 
     const offX = (-(this.camX % gridSpacing) + gridSpacing) % gridSpacing;
     const offY = (-(this.camY % gridSpacing) + gridSpacing) % gridSpacing;
-
-    for (let x = offX - gridSpacing; x < canvas.width + gridSpacing; x += gridSpacing) {
-      for (let y = offY - gridSpacing; y < canvas.height + gridSpacing; y += gridSpacing) {
-        ctx.beginPath();
-        ctx.arc(x, y, 1.2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+    ctx.drawImage(this._bgTile, offX - gridSpacing, offY - gridSpacing);
   }
 
   _drawWorldBorder() {
@@ -1960,6 +2054,7 @@ class Game {
 
     ctx.fillStyle = 'rgba(126,255,178,0.3)';
     for (const f of this.foods) {
+      if (f.expired) continue;   // don't show ghost dots for expired food
       ctx.fillRect(
         MAP_X + f.pos.x * SCALE_X - 0.5,
         MAP_Y + f.pos.y * SCALE_Y - 0.5,
