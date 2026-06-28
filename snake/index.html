@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Slither Clone</title>
+  <title>Snake Rush</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
   <!-- Start / Game-Over overlay -->
   <div id="overlay">
     <div id="overlay-content">
-      <h1 id="overlay-title">🐍 SLITHER</h1>
+      <h1 id="overlay-title">🐍 SNAKE RUSH</h1>
       <p id="overlay-subtitle">Eat food. Grow big. Outlast the rest.</p>
 
       <ul id="controls-hint">
@@ -27,6 +27,41 @@
         <p>Your final score</p>
         <p id="final-score">0</p>
       </div>
+
+      <!-- ── Settings Panel ───────────────────────────────── -->
+      <div id="settings-panel">
+        <div class="settings-header">
+          <span class="settings-icon">⚙️</span>
+          <span>Settings</span>
+        </div>
+
+        <!-- Sound toggle -->
+        <div class="setting-row">
+          <label class="setting-label" for="setting-mute">🔊 Sound</label>
+          <button id="setting-mute" class="toggle-btn active" aria-pressed="false">ON</button>
+        </div>
+
+        <!-- Sensitivity slider -->
+        <div class="setting-row">
+          <label class="setting-label" for="setting-sensitivity">🎮 Sensitivity</label>
+          <div class="slider-wrap">
+            <input type="range" id="setting-sensitivity" min="1" max="20" step="1" value="8" />
+            <span id="sensitivity-val">8</span>
+          </div>
+        </div>
+
+        <!-- Snake design selector -->
+        <div class="setting-row setting-row--vertical">
+          <label class="setting-label">🎨 Snake Style</label>
+          <div class="design-btns" id="design-selector" role="group" aria-label="Snake style">
+            <button class="design-btn active" data-design="multicolour">Multicolour</button>
+            <button class="design-btn" data-design="fatty">Fatty</button>
+            <button class="design-btn" data-design="thin">Thin</button>
+            <button class="design-btn" data-design="designer">Designer</button>
+          </div>
+        </div>
+      </div>
+      <!-- ── /Settings Panel ──────────────────────────────── -->
 
       <button id="start-btn">Play</button>
     </div>
