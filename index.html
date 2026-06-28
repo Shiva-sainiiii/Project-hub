@@ -3,61 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Projects Hub</title>
-
-    <!-- Tailwind CSS -->
+    <title>Project Hub — Collection</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google Fonts: Syncopate -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
-
     <style>
-        body {
-            font-family: 'Syncopate', sans-serif;
-            background: #050505;
-            color: #fff;
-        }
-
-        /* Glassmorphism card */
-      .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-        }
-
-      .glass-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
-        }
-
-        /* Gradient glow on hover */
-      .card-glow::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 1rem;
-            padding: 1px;
-            background: linear-gradient(135deg, #8B5CF6, #06B6D4);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-      .glass-card:hover.card-glow::before {
-            opacity: 1;
-        }
+        body { font-family: 'Syncopate', sans-serif; background: #050505; color: #fff; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s ease; }
+        .glass-card:hover { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); transform: translateY(-8px); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15); }
+        .card-glow::before { content: ''; position: absolute; inset: 0; border-radius: 1rem; padding: 1px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity 0.3s ease; }
+        .glass-card:hover.card-glow::before { opacity: 1; }
     </style>
 </head>
 <body class="antialiased min-h-screen">
-    <!-- Header -->
     <header class="w-full p-6 md:p-8 border-b border-white/5">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <h1 class="text-sm md:text-base font-bold tracking-[0.3em] uppercase">PROJECT.HUB</h1>
@@ -65,233 +24,81 @@
         </div>
     </header>
 
-    <!-- Main Grid -->
     <main class="max-w-7xl mx-auto px-6 md:px-8 py-12 md:py-20">
         <div class="mb-12 md:mb-16">
-            <h2 class="text-3xl md:text-5xl font-bold uppercase tracking-[0.1em] leading-[0.9] mb-4">
-                MY WEBSITES
-            </h2>
-            <p class="text-xs md:text-sm opacity-40 tracking-[0.3em] uppercase">
-                Select a project to explore
-            </p>
+            <h2 class="text-3xl md:text-5xl font-bold uppercase tracking-[0.1em] leading-[0.9] mb-4">RESTRUCTURED HUB</h2>
+            <p class="text-xs md:text-sm opacity-40 tracking-[0.3em] uppercase">Explore the professional collection</p>
         </div>
 
-        <!-- Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-
-            <!-- Card 1: Example -->
-            <a href="kdpbookbuilder.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+            <!-- Game: Snake Rush -->
+            <a href="games/snake-game/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
                 <div class="relative z-10">
                     <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">01</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
+                        <span class="text-xs tracking-[0.2em] opacity-40">GAME</span>
+                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path></svg>
                     </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        Portfolio 3D
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        WebGL cinematic experience with particles
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">THREE.JS</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">GSAP</span>
-                    </div>
+                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">SNAKE RUSH</h3>
+                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">Modern take on the classic arcade game</p>
                 </div>
             </a>
 
-            <!-- Card 2: Example -->
-            <a href="markdowntopdf.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+            <!-- Tool: KDP Builder -->
+            <a href="tools/kdp-book-builder/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
                 <div class="relative z-10">
                     <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">02</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
+                        <span class="text-xs tracking-[0.2em] opacity-40">TOOL</span>
+                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path></svg>
                     </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        E-Commerce
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        Premium shopping experience
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">NEXT.JS</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">STRIPE</span>
-                    </div>
+                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">KDP BUILDER</h3>
+                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">Manuscript to KDP formatting utility</p>
                 </div>
             </a>
 
-            <!-- Card 3: Example -->
-            <a href="Portfolio1/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+            <!-- Tool: Markdown to PDF -->
+            <a href="tools/markdown-to-pdf/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
                 <div class="relative z-10">
                     <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">03</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
+                        <span class="text-xs tracking-[0.2em] opacity-40">TOOL</span>
+                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path></svg>
                     </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        SaaS Dashboard
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        Analytics & data visualization
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">REACT</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">CHART.JS</span>
-                    </div>
+                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">TEXTCRAFT PDF</h3>
+                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">Markdown to professional PDF converter</p>
                 </div>
             </a>
 
-            <!-- Card 4: Example -->
-            <a href="creativemeta.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+            <!-- Portfolio: V1 -->
+            <a href="portfolios/portfolio-v1/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
                 <div class="relative z-10">
                     <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">04</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
+                        <span class="text-xs tracking-[0.2em] opacity-40">PORTFOLIO</span>
+                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path></svg>
                     </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        Agency Site
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        Creative studio landing page
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">FRAMER</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">MOTION</span>
-                    </div>
+                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">PORTFOLIO V1</h3>
+                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">Minimalist personal template</p>
                 </div>
             </a>
 
-            <!-- Card 5: Add more -->
-            <a href="creativecopilot.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
-                <div class="relative z-10">
-                    <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">05</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        Blog Platform
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        Minimal writing experience
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">ASTRO</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">MDX</span>
-                    </div>
-                </div>
-            </a>
-
-           <!-- Card 1: Example -->
-            <a href="creativeclaude.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
-                <div class="relative z-10">
-                    <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">01</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        Portfolio 3D
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        WebGL cinematic experience with particles
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">THREE.JS</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">GSAP</span>
-                    </div>
-                </div>
-                            </a>
-            <!-- Card 6: Example -->
-            <a href="creativegemini.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
-                <div class="relative z-10">
-                    <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">01</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        Portfolio 3D
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        WebGL cinematic experience with particles
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">THREE.JS</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">GSAP</span>
-                    </div>
-                </div>
-            </a>
-            <!-- Card 7: Example -->
-            <a href="kdpbookbuilder.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
-                <div class="relative z-10">
-                    <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">01</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        Portfolio 3D
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        WebGL cinematic experience with particles
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">THREE.JS</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">GSAP</span>
-                    </div>
-                </div>
-            </a>
-            <!-- Card 8: Example -->
-            <a href="kdpbookbuilder.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
-                <div class="relative z-10">
-                    <div class="flex items-start justify-between mb-6">
-                        <span class="text-xs tracking-[0.2em] opacity-40">01</span>
-                        <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H7M17 7V17"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-[0.1em] mb-3">
-                        Portfolio 3D
-                    </h3>
-                    <p class="text-xs opacity-50 tracking-[0.15em] uppercase leading-relaxed">
-                        WebGL cinematic experience with particles
-                    </p>
-                    <div class="mt-6 flex gap-2 flex-wrap">
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">THREE.JS</span>
-                        <span class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 tracking-wider">GSAP</span>
-                    </div>
-                </div>
-            </a>
-            <!-- Card 9: Add New Card Template -->
-            <a href="snake/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group opacity-50 hover:opacity-100">
-                <div class="relative z-10 h-full flex flex-col items-center justify-center text-center">
-                    <svg class="w-12 h-12 mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    <p class="text-xs tracking-[0.3em] uppercase opacity-40">Add New</p>
-                </div>
-            </a>
-
+            <!-- Creative Portfolios Group -->
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                <a href="tools/creative-portfolios/claude/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+                    <h3 class="text-lg font-bold uppercase tracking-[0.1em] mb-2">CLAUDE 3D</h3>
+                    <p class="text-[10px] opacity-40 uppercase">VOID EXPERIENCE</p>
+                </a>
+                <a href="tools/creative-portfolios/copilot/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+                    <h3 class="text-lg font-bold uppercase tracking-[0.1em] mb-2">COPILOT 3D</h3>
+                    <p class="text-[10px] opacity-40 uppercase">PARTICLE JOURNEY</p>
+                </a>
+                <a href="tools/creative-portfolios/gemini/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+                    <h3 class="text-lg font-bold uppercase tracking-[0.1em] mb-2">GEMINI 3D</h3>
+                    <p class="text-[10px] opacity-40 uppercase">STUDIO.X WEBGL</p>
+                </a>
+                <a href="tools/creative-portfolios/meta/index.html" target="_blank" class="glass-card card-glow relative rounded-2xl p-8 block group">
+                    <h3 class="text-lg font-bold uppercase tracking-[0.1em] mb-2">META 3D</h3>
+                    <p class="text-[10px] opacity-40 uppercase">ELITE JOURNEY</p>
+                </a>
+            </div>
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="w-full p-6 md:p-8 mt-20 border-t border-white/5">
-        <div class="max-w-7xl mx-auto flex justify-between items-center text-xs opacity-30 tracking-[0.2em]">
-            <span>©2026</span>
-            <span>ALL RIGHTS RESERVED</span>
-        </div>
-    </footer>
 </body>
 </html>
