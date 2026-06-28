@@ -31,6 +31,16 @@ const Settings = {
   muted:       false,
   sensitivity: 8,       // lerp factor (1–20 → mapped to 0.01–0.22)
   design:      'multicolour',  // 'multicolour' | 'fatty' | 'thin' | 'designer'
+
+  /* ── High Score — persisted in localStorage ────────────── */
+  get bestScore() {
+    return parseInt(localStorage.getItem('snakeRush_bestScore') || '0', 10);
+  },
+  saveBestScore(score) {
+    if (score > this.bestScore) {
+      localStorage.setItem('snakeRush_bestScore', String(score));
+    }
+  },
 };
 
 /* ─────────────────────────────────────────────────────────────
@@ -61,7 +71,12 @@ const MAGNET_DURATION    = 7;
 const MAGNET_RADIUS      = 280;
 const MAGNET_PULL_FORCE  = 220;
 const ATTACK_DURATION    = 8;
-const POWERUP_SPAWN_RATE = 0.004;
+const POWERUP_SPAWN_RATE   = 0.004;
+const LIFELINE_SPAWN_RATE  = 0.0018;  // ~0.18% chance per spawn roll — rarer than magnet
+
+/* Food debris TTL — dead-snake food disappears after this many seconds */
+const DEBRIS_TTL_MIN = 10;
+const DEBRIS_TTL_MAX = 15;
 
 /* Audio proximity trigger */
 const NEAR_SNAKE_RADIUS  = 100;  // px — triggers nearsnake.mp3
@@ -229,9 +244,30 @@ class AudioManager {
   }
 
   playEat()      { this._play('eat',      false, 0.7); }
-  playMagnet()   { this._play('magnet',   false, 0.8); }
   playKill()     { this._play('kill',     false, 0.9); }
-  playLifeline() { this._play('lifeline', false, 0.85); }
+
+  /**
+   * Magnet and Lifeline SFX — trimmed to 4 seconds.
+   * We start the BufferSource normally but schedule a stop()
+   * exactly 4 s after the AudioContext's current time.
+   */
+  _playTrimmed(name, volume = 0.85, maxDuration = 4) {
+    if (!this._canPlay || !this._buffers[name]) return;
+    const src  = this._ctx.createBufferSource();
+    const gain = this._ctx.createGain();
+    src.buffer      = this._buffers[name];
+    src.loop        = false;
+    gain.gain.value = volume;
+    src.connect(gain);
+    gain.connect(this._ctx.destination);
+    src.start(0);
+    // Schedule hard stop at currentTime + maxDuration (Web Audio precision)
+    const stopAt = this._ctx.currentTime + maxDuration;
+    src.stop(stopAt);
+  }
+
+  playMagnet()   { this._playTrimmed('magnet',   0.8, 4); }
+  playLifeline() { this._playTrimmed('lifeline', 0.85, 4); }
 
   playEnemyBite(dt) {
     this._biteCooldown -= dt || 0;
@@ -342,21 +378,27 @@ class SpatialGrid {
    3. FOOD
 ───────────────────────────────────────────────────────────── */
 const FOOD_TYPE = Object.freeze({
-  NORMAL: 'normal',
-  MAGNET: 'magnet',
-  ATTACK: 'attack',
+  NORMAL:   'normal',
+  MAGNET:   'magnet',
+  ATTACK:   'attack',
+  LIFELINE: 'lifeline',   // ← NEW: restores one lost life
 });
 
 class Food {
-  constructor(x, y, color, type = FOOD_TYPE.NORMAL) {
+  constructor(x, y, color, type = FOOD_TYPE.NORMAL, ttl = null) {
     this.pos    = new Vector2(x, y);
     this.type   = type;
-    this.radius = type === FOOD_TYPE.NORMAL ? 6 : 9;
+    this.radius = (type === FOOD_TYPE.NORMAL) ? 6 : 9;
     this.phase  = Math.random() * Math.PI * 2;
 
-    if      (type === FOOD_TYPE.MAGNET) this.color = '#00ccff';
-    else if (type === FOOD_TYPE.ATTACK) this.color = '#ff3f3f';
-    else                                this.color = color;
+    // TTL for dead-snake food debris (null = permanent)
+    this.ttl     = ttl;        // seconds remaining; null = no expiry
+    this._born   = Date.now(); // for fade-out calc
+
+    if      (type === FOOD_TYPE.MAGNET)   this.color = '#00ccff';
+    else if (type === FOOD_TYPE.ATTACK)   this.color = '#ff3f3f';
+    else if (type === FOOD_TYPE.LIFELINE) this.color = '#ff69b4';  // pink heart
+    else                                  this.color = color;
   }
 
   draw(ctx, camX, camY) {
@@ -366,8 +408,18 @@ class Food {
     if (sx < -24 || sx > ctx.canvas.width  + 24 ||
         sy < -24 || sy > ctx.canvas.height + 24) return;
 
+    // ── TTL alpha fade: last 3 s of life fade out ─────────
+    let alphaScale = 1;
+    if (this.ttl !== null) {
+      alphaScale = Math.min(1, this.ttl / 3);  // fade over the final 3 seconds
+      if (alphaScale <= 0) return;
+    }
+
     const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.003 + this.phase);
     const r     = this.radius + pulse * 2;
+
+    ctx.save();
+    ctx.globalAlpha = alphaScale;
 
     if (this.type === FOOD_TYPE.NORMAL) {
       ctx.shadowColor = this.color;
@@ -439,7 +491,39 @@ class Food {
       ctx.stroke();
 
       ctx.lineCap = 'butt';
+
+    } else if (this.type === FOOD_TYPE.LIFELINE) {
+      // ── Pulsing pink heart icon ───────────────────────────
+      ctx.shadowColor = '#ff69b4';
+      ctx.shadowBlur  = 20 + pulse * 12;
+
+      // Outer glow ring
+      ctx.beginPath();
+      ctx.arc(sx, sy, r + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,105,180,0.35)';
+      ctx.lineWidth   = 2;
+      ctx.stroke();
+
+      // Heart shape drawn with bezier curves
+      const hr = r * 0.72;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy + hr * 0.8);
+      // Left lobe
+      ctx.bezierCurveTo(sx - hr * 1.2, sy, sx - hr * 1.4, sy - hr * 1.1, sx, sy - hr * 0.5);
+      // Right lobe
+      ctx.bezierCurveTo(sx + hr * 1.4, sy - hr * 1.1, sx + hr * 1.2, sy, sx, sy + hr * 0.8);
+      ctx.fillStyle   = '#ff69b4';
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+      // White highlight
+      ctx.beginPath();
+      ctx.arc(sx - hr * 0.35, sy - hr * 0.25, hr * 0.25, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fill();
     }
+
+    ctx.restore();
   }
 }
 
@@ -526,16 +610,27 @@ class ParticlePool {
    and driven by the global Settings.design.
 ───────────────────────────────────────────────────────────── */
 
-/** Returns current visual segment radius based on design setting */
-function getSegmentR() {
-  switch (Settings.design) {
-    case 'fatty':  return Math.round(SEGMENT_R_BASE * 1.45);
-    case 'thin':   return Math.round(SEGMENT_R_BASE * 0.60);
-    default:       return SEGMENT_R_BASE;
+/** Returns current visual segment radius for a given design */
+function getSegmentRForDesign(design) {
+  switch (design) {
+    case 'fatty': return Math.round(SEGMENT_R_BASE * 1.45);
+    case 'thin':  return Math.round(SEGMENT_R_BASE * 0.60);
+    default:      return SEGMENT_R_BASE;
   }
 }
 
-/** Designer palette index — cycles every 4 seconds */
+/** Legacy helper — reads player's current design from Settings */
+function getSegmentR() {
+  return getSegmentRForDesign(Settings.design);
+}
+
+/** Pick a random design for an AI snake (never 'designer') */
+function _randomAIDesign() {
+  const options = ['multicolour', 'fatty', 'thin'];
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+/** Designer palette index — cycles every 4 seconds (player-only) */
 let _designerPaletteIdx = 0;
 let _designerTimer      = 0;
 const DESIGNER_CYCLE    = 4;   // seconds per palette
@@ -550,7 +645,7 @@ function tickDesignerPalette(dt) {
 }
 
 class Snake {
-  constructor(x, y, bodyColor, headColor, initLen = 8) {
+  constructor(x, y, bodyColor, headColor, initLen = 8, isPlayer = false) {
     this.pos       = new Vector2(x, y);
     this.dir       = new Vector2(1, 0);
     this.speed     = BASE_SPEED;
@@ -558,6 +653,16 @@ class Snake {
     this.bodyColor = bodyColor;
     this.headColor = headColor;
     this.score     = 0;
+
+    /* ── Per-snake design (separation of concerns) ──────────
+       isPlayer → use Settings.design at draw time.
+       AI snakes get a fixed random design assigned at creation
+       and stored here so they never read Settings.design.   */
+    this.isPlayer  = isPlayer;
+    this.design    = isPlayer ? Settings.design : _randomAIDesign();
+    // For AI "designer" design, pick a fixed palette index so it
+    // doesn't cycle — AI snakes always use the same palette entry.
+    this._aiDesignerPaletteIdx = Math.floor(Math.random() * DESIGNER_PALETTES.length);
 
     this.segments = [];
     for (let i = 0; i < initLen; i++) {
@@ -635,12 +740,11 @@ class Snake {
   }
 
   /**
-   * RENDER — design-aware.
+   * RENDER — design-aware per snake.
    *
-   * Multicolour: each segment gets a colour from the cycle palette.
-   * Fatty / Thin: segmentR reads from getSegmentR(), adjusting all
-   *   hit tests and visual sizes simultaneously.
-   * Designer: body + head colour overridden by current palette entry.
+   * Player snake reads Settings.design live (so style changes in settings
+   * apply in-game). AI snakes use their own fixed this.design, assigned
+   * at creation, so they ignore the player's style picker entirely.
    */
   draw(ctx, camX, camY) {
     if (!this.alive) return;
@@ -650,22 +754,22 @@ class Snake {
       if (Math.floor(Date.now() / 62) % 2 === 0) return;
     }
 
-    const segR = getSegmentR();
+    // Resolve the active design for THIS snake
+    const activeDesign = this.isPlayer ? Settings.design : this.design;
+    const segR = getSegmentRForDesign(activeDesign);
     const segs = this.segments;
     const len  = segs.length;
 
     // ── Design: resolve colors ────────────────────────────
     const inAttack  = this.attackTimer !== undefined && this.attackTimer > 0;
-    let bodyFill  = inAttack ? '#8b1a1a' : this._resolveBodyColor();
-    let headFill  = inAttack ? '#ff2222' : this._resolveHeadColor();
+    let bodyFill  = inAttack ? '#8b1a1a' : this._resolveBodyColor(activeDesign);
+    let headFill  = inAttack ? '#ff2222' : this._resolveHeadColor(activeDesign);
     const glowColor = inAttack ? '#ff2222' : headFill;
 
-    const isMulticolour = Settings.design === 'multicolour' && !inAttack;
+    const isMulticolour = activeDesign === 'multicolour' && !inAttack;
 
     // ── 1. Body segments ──────────────────────────────────
     if (isMulticolour) {
-      // Draw each segment individually to cycle colour.
-      // Still use a single arc per segment for performance.
       for (let i = len - 1; i >= 1; i--) {
         const sx = segs[i].x - camX;
         const sy = segs[i].y - camY;
@@ -677,7 +781,6 @@ class Snake {
         ctx.fill();
       }
     } else {
-      // Single path — fast
       ctx.beginPath();
       for (let i = len - 1; i >= 1; i--) {
         const sx = segs[i].x - camX;
@@ -722,18 +825,20 @@ class Snake {
     this._drawEyes(ctx, hx, hy, segR);
   }
 
-  /** Resolve body color based on current design setting */
-  _resolveBodyColor() {
-    if (Settings.design === 'designer') {
-      return DESIGNER_PALETTES[_designerPaletteIdx][0];
+  /** Resolve body color for the given design string */
+  _resolveBodyColor(design) {
+    if (design === 'designer') {
+      const idx = this.isPlayer ? _designerPaletteIdx : this._aiDesignerPaletteIdx;
+      return DESIGNER_PALETTES[idx][0];
     }
     return this.bodyColor;
   }
 
-  /** Resolve head color based on current design setting */
-  _resolveHeadColor() {
-    if (Settings.design === 'designer') {
-      return DESIGNER_PALETTES[_designerPaletteIdx][1];
+  /** Resolve head color for the given design string */
+  _resolveHeadColor(design) {
+    if (design === 'designer') {
+      const idx = this.isPlayer ? _designerPaletteIdx : this._aiDesignerPaletteIdx;
+      return DESIGNER_PALETTES[idx][1];
     }
     return this.headColor;
   }
@@ -767,7 +872,7 @@ class Snake {
 ───────────────────────────────────────────────────────────── */
 class PlayerSnake extends Snake {
   constructor(x, y) {
-    super(x, y, '#2dd87a', '#7effb2', 12);
+    super(x, y, '#2dd87a', '#7effb2', 12, true /* isPlayer */);
     this.pointer        = new Vector2(0, 0);
     this.boosting       = false;
     this._boostDrainAcc = 0;
@@ -1119,6 +1224,7 @@ class Game {
     this.startBtn     = document.getElementById('start-btn');
     this.hudScore     = document.getElementById('hud-score');
     this.hudLength    = document.getElementById('hud-length');
+    this.hudBest      = document.getElementById('hud-best');     // ← Best Score HUD
 
     this._heartEls = [
       document.getElementById('heart-1'),
@@ -1267,6 +1373,9 @@ class Game {
     this._inDangerZone  = false;
     this._nearSnakeLast = false;
 
+    // Reset camera zoom
+    this._zoom = 1.0;
+
     this.running   = true;
     this._lastTime = performance.now();
     if (this._rafId) cancelAnimationFrame(this._rafId);
@@ -1282,12 +1391,14 @@ class Game {
     let type = forceType;
     if (!type) {
       const roll = Math.random();
-      if      (roll < POWERUP_SPAWN_RATE)     type = FOOD_TYPE.MAGNET;
-      else if (roll < POWERUP_SPAWN_RATE * 2) type = FOOD_TYPE.ATTACK;
-      else                                     type = FOOD_TYPE.NORMAL;
+      if      (roll < LIFELINE_SPAWN_RATE)                         type = FOOD_TYPE.LIFELINE;
+      else if (roll < LIFELINE_SPAWN_RATE + POWERUP_SPAWN_RATE)   type = FOOD_TYPE.MAGNET;
+      else if (roll < LIFELINE_SPAWN_RATE + POWERUP_SPAWN_RATE * 2) type = FOOD_TYPE.ATTACK;
+      else                                                          type = FOOD_TYPE.NORMAL;
     }
 
-    const f = new Food(fx, fy, col, type);
+    // Permanent power-ups have no TTL; only debris food expires
+    const f = new Food(fx, fy, col, type, null);
     this.foods.push(f);
     this.foodGrid.add(f);
     return f;
@@ -1336,10 +1447,22 @@ class Game {
       this.snakes[i].update(dt);
     }
 
-    // ── Camera ────────────────────────────────────────────
+    // ── Camera + Dynamic Zoom ─────────────────────────────
     if (this.player.alive) {
-      const targetX = this.player.head.x - this.canvas.width  / 2;
-      const targetY = this.player.head.y - this.canvas.height / 2;
+      // Zoom-out as snake grows: 1.0 at len ≤ 20, 0.55 at len ≥ 120
+      const MIN_LEN  = 20,  MAX_LEN  = 120;
+      const MIN_ZOOM = 0.55, MAX_ZOOM = 1.0;
+      const t = Math.max(0, Math.min(1,
+        (this.player.length - MIN_LEN) / (MAX_LEN - MIN_LEN)
+      ));
+      const targetZoom = MAX_ZOOM - (MAX_ZOOM - MIN_ZOOM) * t;
+      // Smooth zoom interpolation
+      this._zoom = this._zoom ?? 1.0;
+      this._zoom += (targetZoom - this._zoom) * Math.min(1, 2 * dt);
+
+      // Camera centers on player head, accounting for zoom
+      const targetX = this.player.head.x - (this.canvas.width  / 2) / this._zoom;
+      const targetY = this.player.head.y - (this.canvas.height / 2) / this._zoom;
       const camT = Math.min(1, 7 * dt);
       this.camX += (targetX - this.camX) * camT;
       this.camY += (targetY - this.camY) * camT;
@@ -1410,6 +1533,17 @@ class Game {
         if (dsq >= rSum * rSum) continue;
 
         if (isPlayer) {
+          if (food.type === FOOD_TYPE.LIFELINE) {
+            // Replenish one lost life (max PLAYER_LIVES)
+            if (this.player.lives < PLAYER_LIVES) {
+              this.player.lives++;
+              this._updateLivesHUD();
+            }
+            this.audio.playLifeline();   // ← lifeline.mp3 on collect too
+            eaten.push(food);
+            this._spawnFood(FOOD_TYPE.NORMAL);
+            continue;
+          }
           if (food.type === FOOD_TYPE.MAGNET) {
             this.player.activateMagnet();
             this.audio.playMagnet();   // ← magnet.mp3
@@ -1452,6 +1586,22 @@ class Game {
     // ── Particles ─────────────────────────────────────────
     this.particles.update(dt);
 
+    // ── TTL garbage collection — remove expired debris food ─
+    {
+      let i = this.foods.length;
+      while (i--) {
+        const f = this.foods[i];
+        if (f.ttl === null) continue;  // permanent food — skip
+        f.ttl -= dt;
+        if (f.ttl <= 0) {
+          this.foodGrid.remove(f);
+          this.foods[i] = this.foods[this.foods.length - 1];
+          this.foods.pop();
+          // No replacement spawn — debris is impermanent by design
+        }
+      }
+    }
+
     // ── Respawn dead AI ───────────────────────────────────
     for (let i = 1; i < this.snakes.length; i++) {
       if (!this.snakes[i].alive) {
@@ -1473,6 +1623,7 @@ class Game {
     if (this.player.alive) {
       this.hudScore.textContent  = `Score: ${this.player.score}`;
       this.hudLength.textContent = `Length: ${this.player.length}`;
+      if (this.hudBest) this.hudBest.textContent = `Best: ${Settings.bestScore}`;
       this._updateLivesHUD();
     }
   }
@@ -1549,11 +1700,13 @@ class Game {
       if (seg.x > 10 && seg.x < WORLD_W - 10 &&
           seg.y > 10 && seg.y < WORLD_H - 10) {
         const col = FOOD_COLORS[Math.floor(Math.random() * FOOD_COLORS.length)];
+        const ttl = DEBRIS_TTL_MIN + Math.random() * (DEBRIS_TTL_MAX - DEBRIS_TTL_MIN);
         const f   = new Food(
           seg.x + (Math.random() - 0.5) * 10,
           seg.y + (Math.random() - 0.5) * 10,
           col,
-          FOOD_TYPE.NORMAL
+          FOOD_TYPE.NORMAL,
+          ttl          // ← debris expires after 10–15 s
         );
         this.foods.push(f);
         this.foodGrid.add(f);
@@ -1652,11 +1805,13 @@ class Game {
         if (seg.x > 10 && seg.x < WORLD_W - 10 &&
             seg.y > 10 && seg.y < WORLD_H - 10) {
           const col = FOOD_COLORS[Math.floor(Math.random() * FOOD_COLORS.length)];
+          const ttl = DEBRIS_TTL_MIN + Math.random() * (DEBRIS_TTL_MAX - DEBRIS_TTL_MIN);
           this.foods.push(new Food(
             seg.x + (Math.random() - 0.5) * 8,
             seg.y + (Math.random() - 0.5) * 8,
             col,
-            FOOD_TYPE.NORMAL
+            FOOD_TYPE.NORMAL,
+            ttl          // ← debris expires after 10–15 s
           ));
           this.foodGrid.add(this.foods[this.foods.length - 1]);
         }
@@ -1668,7 +1823,16 @@ class Game {
   _gameOver() {
     this.running = false;
     this._inDangerZone = false;
-    this.finalScore.textContent = this.player.score;
+
+    const score = this.player.score;
+    Settings.saveBestScore(score);
+
+    this.finalScore.textContent = score;
+
+    // Update best-score display on overlay
+    const bestEl = document.getElementById('overlay-best-score');
+    if (bestEl) bestEl.textContent = `Best: ${Settings.bestScore}`;
+
     this.scoreDisplay.style.display = 'block';
     this.overlay.classList.remove('hidden');
     this.audio.stopBg();
@@ -1684,18 +1848,26 @@ class Game {
     this._drawBackground();
     this._drawWorldBorder();
 
+    // ── Apply zoom transform ──────────────────────────────
+    // Everything between save/restore is drawn at _zoom scale.
+    const zoom = this._zoom ?? 1.0;
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
     if (this.player && this.player.alive && this.player.magnetTimer > 0) {
       this._drawMagnetAura();
     }
 
-    ctx.save();
     for (const food of this.foods) food.draw(ctx, this.camX, this.camY);
-    ctx.restore();
-
     for (const snake of this.snakes) snake.draw(ctx, this.camX, this.camY);
-
     this.particles.draw(ctx, this.camX, this.camY);
 
+    ctx.restore();
+    // ── End zoom transform ────────────────────────────────
+
+    // HUD overlays are drawn outside the zoom so they stay fixed size
     this._drawMinimap();
     if (this.player.alive) this._drawWallWarning();
   }

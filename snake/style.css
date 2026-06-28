@@ -75,6 +75,12 @@ html, body {
   opacity: 0.3;
 }
 
+/* Best score — slightly dimmed to visually separate from current score */
+#hud-best {
+  color: rgba(255, 180, 100, 0.75);
+  font-size: 0.78rem;
+}
+
 /* ─── Overlay ───────────────────────────────────────────────── */
 #overlay {
   position: fixed;
