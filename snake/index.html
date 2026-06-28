@@ -21,13 +21,17 @@
         <li class="hint-new">🧲 Magnet power-up pulls nearby food</li>
         <li class="hint-new">⚔️ Attack power-up — bite enemies to shatter them</li>
         <li class="hint-new">❤️ You have <strong>3 lives</strong> — use them wisely</li>
-        <li class="hint-new">💗 Pink heart food restores a lost life</li>
+        <li class="hint-new">💊 <strong>Lifeline</strong> orb — eat it to recover a lost life</li>
       </ul>
 
       <div id="score-display" style="display:none;">
         <p>Your final score</p>
         <p id="final-score">0</p>
-        <p id="overlay-best-score" style="font-size:0.85em;opacity:0.7;">Best: 0</p>
+      </div>
+
+      <div id="best-score-display" style="display:none;">
+        <p>🏆 Best Score</p>
+        <p id="best-score-value">0</p>
       </div>
 
       <!-- ── Settings Panel ───────────────────────────────── -->
@@ -72,8 +76,8 @@
   <!-- HUD: score + length + lives + power-ups + boost indicator -->
   <div id="hud">
     <span id="hud-score">Score: 0</span>
+    <span id="hud-best-score">Best: 0</span>
     <span id="hud-length">Length: 12</span>
-    <span id="hud-best">Best: 0</span>
     <span id="hud-lives">
       <span class="life-heart" id="heart-1">❤️</span>
       <span class="life-heart" id="heart-2">❤️</span>
@@ -92,11 +96,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       const boostEl    = document.getElementById('hud-boost');
       const powerupsEl = document.getElementById('hud-powerups');
-
-      // Populate best score on page load from localStorage
-      const bestEl = document.getElementById('overlay-best-score');
-      const stored = parseInt(localStorage.getItem('snakeRush_bestScore') || '0', 10);
-      if (bestEl && stored > 0) bestEl.textContent = `Best: ${stored}`;
 
       function tick() {
         const g = window._game;

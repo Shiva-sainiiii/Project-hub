@@ -75,12 +75,6 @@ html, body {
   opacity: 0.3;
 }
 
-/* Best score — slightly dimmed to visually separate from current score */
-#hud-best {
-  color: rgba(255, 180, 100, 0.75);
-  font-size: 0.78rem;
-}
-
 /* ─── Overlay ───────────────────────────────────────────────── */
 #overlay {
   position: fixed;
@@ -441,4 +435,42 @@ html, body {
   border-top: 1px solid rgba(126,255,178,0.12);
   margin-top: 4px;
   padding-top: 6px;
+}
+
+/* ── Best Score — game-over overlay ────────────────────────── */
+#best-score-display {
+  margin-top: 10px;
+  text-align: center;
+}
+
+#best-score-display p:first-child {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255,215,0,0.75);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+#best-score-value {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #ffd700;
+  text-shadow: 0 0 14px rgba(255,215,0,0.65);
+  margin: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Best Score — HUD ───────────────────────────────────────── */
+#hud-best-score {
+  font-size: 0.78rem;
+  color: rgba(255,215,0,0.75);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ── Lifeline food glow (canvas-drawn, class for documentation) */
+.lifeline-food-glow {
+  /* pink heart orb drawn on canvas */
 }
