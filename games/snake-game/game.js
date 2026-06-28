@@ -176,17 +176,17 @@ class AudioManager {
     this._biteCooldown   = 0;  // enemybite.mp3 cooldown
 
     this._tracks = {
-      bg:        'bgmusic.mp3',
-      eat:       'eat.mp3',
-      panic:     'panic.mp3',
-      gameover:  'gameover.mp3',
-      magnet:    'magnet.mp3',
-      run:       'run.mp3',
-      enemybite: 'enemybite.mp3',
-      nearsnake: 'nearsnake.mp3',
-      kill:      'kill.mp3',
-      lifeline:  'lifeline.mp3',
-    };
+  bg:        'assets/bgmusic.mp3',
+  eat:       'assets/eat.mp3',
+  panic:     'assets/panic.mp3',
+  gameover:  'assets/gameover.mp3',
+  magnet:    'assets/magnet.mp3',
+  run:       'assets/run.mp3',
+  enemybite: 'assets/enemybite.mp3',
+  nearsnake: 'assets/nearsnake.mp3',
+  kill:      'assets/kill.mp3',
+  lifeline:  'assets/lifeline.mp3',
+};
 
     const unlock = () => {
       this._init();
