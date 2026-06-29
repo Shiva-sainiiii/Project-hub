@@ -14,6 +14,26 @@
       <h1 id="overlay-title">🐍 SNAKE RUSH</h1>
       <p id="overlay-subtitle">Eat food. Grow big. Outlast the rest.</p>
 
+      <!-- Mode selector -->
+      <div id="mode-selector">
+        <span class="mode-label">Game Mode</span>
+        <div class="mode-btns" role="group" aria-label="Game mode">
+          <button class="mode-btn active" data-mode="classic">Classic</button>
+          <button class="mode-btn" data-mode="arena">Arena</button>
+          <button class="mode-btn" data-mode="timetrial">Time Trial</button>
+        </div>
+        <div id="mode-desc" class="mode-desc">Eat food, grow big, outlast 10 AI snakes. 3 lives.</div>
+      </div>
+
+      <!-- Daily Challenge badge -->
+      <div id="daily-badge" class="daily-badge hidden">📅 DAILY CHALLENGE</div>
+
+      <!-- Player name display -->
+      <div id="player-name-wrap">
+        <span id="player-name-display" title="Click to rename">Crimson Viper</span>
+        <input type="text" id="player-name-input" class="hidden" maxlength="28" placeholder="Your snake name" />
+      </div>
+
       <ul id="controls-hint">
         <li>🖱️ Move mouse to steer</li>
         <li>🖱️ Hold click (or touch) to <strong>boost</strong></li>
@@ -22,6 +42,10 @@
         <li class="hint-new">⚔️ Attack power-up — bite enemies to shatter them</li>
         <li class="hint-new">❤️ You have <strong>3 lives</strong> — use them wisely</li>
         <li class="hint-new">💊 <strong>Lifeline</strong> orb — eat it to recover a lost life</li>
+        <li class="hint-new">🛡️ Shield — full invincibility for 4s</li>
+        <li class="hint-new">👻 Ghost — pass through snake bodies for 4s</li>
+        <li class="hint-new">💣 Mine — drop explosive traps every 2s</li>
+        <li class="hint-new">⚡ Speed Boost — 40% faster for 5s</li>
       </ul>
 
       <div id="score-display" style="display:none;">
@@ -47,6 +71,12 @@
           <button id="setting-mute" class="toggle-btn active" aria-pressed="false">ON</button>
         </div>
 
+        <!-- Gyro toggle -->
+        <div class="setting-row" id="gyro-row" style="display:none;">
+          <label class="setting-label" for="setting-gyro">🎮 Gyro Steer</label>
+          <button id="setting-gyro" class="toggle-btn" aria-pressed="false">OFF</button>
+        </div>
+
         <!-- Sensitivity slider -->
         <div class="setting-row">
           <label class="setting-label" for="setting-sensitivity">🎮 Sensitivity</label>
@@ -66,8 +96,32 @@
             <button class="design-btn" data-design="designer">Designer</button>
           </div>
         </div>
+
+        <!-- Achievements count -->
+        <div class="setting-row">
+          <label class="setting-label">🏆 Achievements</label>
+          <span id="achievement-count" class="achievement-count">0 / 8</span>
+        </div>
       </div>
       <!-- ── /Settings Panel ──────────────────────────────── -->
+
+      <!-- ── Stats Panel ──────────────────────────────────── -->
+      <div id="stats-panel">
+        <div class="stats-header" id="stats-toggle">
+          <span>📊 Stats</span>
+          <span class="stats-arrow">▶</span>
+        </div>
+        <div id="stats-body" class="hidden">
+          <div class="stat-row"><span>Total Runs</span><span id="stat-runs">0</span></div>
+          <div class="stat-row"><span>Total Kills</span><span id="stat-kills">0</span></div>
+          <div class="stat-row"><span>Total Food Eaten</span><span id="stat-food">0</span></div>
+          <div class="stat-row"><span>Total Deaths</span><span id="stat-deaths">0</span></div>
+          <div class="stat-row"><span>Total Playtime</span><span id="stat-time">0m</span></div>
+          <div class="stat-row"><span>Best (Classic)</span><span id="stat-best-classic">0</span></div>
+          <div class="stat-row"><span>Best (Time Trial)</span><span id="stat-best-tt">0</span></div>
+        </div>
+      </div>
+      <!-- ── /Stats Panel ─────────────────────────────────── -->
 
       <button id="start-btn">Play</button>
     </div>
@@ -75,7 +129,7 @@
 
   <!-- HUD: score + length + lives + power-ups + boost indicator -->
   <div id="hud">
-    <span id="hud-score">Score: 0</span>
+    <span id="hud-name-score">Score: 0</span>
     <span id="hud-best-score">Best: 0</span>
     <span id="hud-length">Length: 12</span>
     <span id="hud-lives">
@@ -83,6 +137,8 @@
       <span class="life-heart" id="heart-2">❤️</span>
       <span class="life-heart" id="heart-3">❤️</span>
     </span>
+    <span id="hud-timer" class="hidden"></span>
+    <span id="hud-snakes-remaining" class="hidden"></span>
     <span id="hud-powerups"></span>
     <span id="hud-boost" class="hud-boost-off">⚡ Hold to boost</span>
   </div>
@@ -96,6 +152,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       const boostEl    = document.getElementById('hud-boost');
       const powerupsEl = document.getElementById('hud-powerups');
+      const timerEl    = document.getElementById('hud-timer');
+      const snakesEl   = document.getElementById('hud-snakes-remaining');
 
       function tick() {
         const g = window._game;
@@ -117,7 +175,40 @@
             const secs = Math.ceil(p.attackTimer);
             badges += `<span class="powerup-badge attack">⚔️ ATTACK ${secs}s</span>`;
           }
+          if (p.shieldTimer > 0) {
+            const secs = Math.ceil(p.shieldTimer);
+            badges += `<span class="powerup-badge shield">🛡️ SHIELD ${secs}s</span>`;
+          }
+          if (p.ghostTimer > 0) {
+            const secs = Math.ceil(p.ghostTimer);
+            badges += `<span class="powerup-badge ghost">👻 GHOST ${secs}s</span>`;
+          }
+          if (p.mineTimer > 0) {
+            const secs = Math.ceil(p.mineTimer);
+            badges += `<span class="powerup-badge mine">💣 MINE ${secs}s</span>`;
+          }
+          if (p.speedBoostTimer > 0) {
+            const secs = Math.ceil(p.speedBoostTimer);
+            badges += `<span class="powerup-badge speedboost">⚡ SPEED ${secs}s</span>`;
+          }
           powerupsEl.innerHTML = badges;
+
+          // Time Trial timer
+          if (g._mode === 'timetrial' && g._ttTimer !== undefined) {
+            const secs = Math.ceil(g._ttTimer);
+            timerEl.textContent = `⏱ ${secs}s`;
+            timerEl.className = secs <= 30 ? 'hud-timer-danger' : '';
+            timerEl.classList.remove('hidden');
+            snakesEl.classList.add('hidden');
+          } else if (g._mode === 'arena') {
+            const alive = g.snakes ? g.snakes.filter(s => s !== g.player && s.alive).length : 0;
+            snakesEl.textContent = `SNAKES: ${alive}`;
+            snakesEl.classList.remove('hidden');
+            timerEl.classList.add('hidden');
+          } else {
+            timerEl.classList.add('hidden');
+            snakesEl.classList.add('hidden');
+          }
         }
         requestAnimationFrame(tick);
       }

@@ -44,6 +44,9 @@ html, body {
   letter-spacing: 0.05em;
   color: rgba(180,230,255,0.9);
   white-space: nowrap;
+  flex-wrap: wrap;
+  max-width: 96vw;
+  justify-content: center;
 }
 
 #hud span {
@@ -73,6 +76,28 @@ html, body {
   content: '·';
   margin-right: 20px;
   opacity: 0.3;
+}
+
+/* Timer */
+#hud-timer {
+  font-weight: 700;
+  color: #7effb2;
+  font-size: 0.88rem;
+}
+
+#hud-timer.hud-timer-danger {
+  color: #ff4444 !important;
+  animation: pulse-danger 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-danger {
+  from { opacity: 0.8; }
+  to   { opacity: 1; text-shadow: 0 0 10px rgba(255,60,60,0.8); }
+}
+
+#hud-snakes-remaining {
+  color: #ff9a4b;
+  font-weight: 700;
 }
 
 /* ─── Overlay ───────────────────────────────────────────────── */
@@ -114,6 +139,119 @@ html, body {
   font-size: clamp(0.85rem, 2.5vw, 1rem);
   color: rgba(180,230,255,0.65);
   letter-spacing: 0.04em;
+}
+
+/* ── Mode Selector ────────────────────────────────────────── */
+#mode-selector {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(5,12,20,0.7);
+  border: 1px solid rgba(126,255,178,0.15);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.mode-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(126,255,178,0.55);
+}
+
+.mode-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-radius: 8px;
+  border: 1px solid rgba(126,255,178,0.2);
+  background: rgba(126,255,178,0.04);
+  color: rgba(160,220,255,0.6);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.mode-btn:hover {
+  border-color: rgba(126,255,178,0.4);
+  color: rgba(200,255,220,0.85);
+}
+
+.mode-btn.active {
+  background: rgba(126,255,178,0.18);
+  border-color: rgba(126,255,178,0.6);
+  color: #7effb2;
+  text-shadow: 0 0 5px rgba(126,255,178,0.4);
+}
+
+.mode-desc {
+  font-size: 0.75rem;
+  color: rgba(160,200,255,0.55);
+  line-height: 1.4;
+}
+
+/* ── Daily Challenge Badge ───────────────────────────────── */
+.daily-badge {
+  padding: 5px 16px;
+  background: rgba(255,200,50,0.12);
+  border: 1px solid rgba(255,200,50,0.4);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffd04b;
+  text-shadow: 0 0 8px rgba(255,208,75,0.6);
+  animation: pulse-daily 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-daily {
+  from { box-shadow: 0 0 6px rgba(255,208,75,0.2); }
+  to   { box-shadow: 0 0 16px rgba(255,208,75,0.5); }
+}
+
+/* ── Player Name ─────────────────────────────────────────── */
+#player-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#player-name-display {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #7effb2;
+  cursor: pointer;
+  border-bottom: 1px dashed rgba(126,255,178,0.4);
+  padding-bottom: 2px;
+  transition: color 0.15s;
+}
+
+#player-name-display:hover {
+  color: #b0ffd8;
+}
+
+#player-name-input {
+  background: rgba(5,12,20,0.8);
+  border: 1px solid rgba(126,255,178,0.4);
+  border-radius: 6px;
+  color: #7effb2;
+  font-size: 0.88rem;
+  padding: 4px 10px;
+  outline: none;
+  width: 200px;
+}
+
+#player-name-input:focus {
+  border-color: rgba(126,255,178,0.8);
+  box-shadow: 0 0 8px rgba(126,255,178,0.3);
 }
 
 /* Controls list */
@@ -260,6 +398,14 @@ html, body {
   border-color: rgba(126,255,178,0.5);
 }
 
+/* Achievement count */
+.achievement-count {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffd04b;
+  letter-spacing: 0.04em;
+}
+
 /* ── Sensitivity slider ─────────────────────────────────────── */
 .slider-wrap {
   display: flex;
@@ -343,6 +489,63 @@ html, body {
   text-shadow: 0 0 5px rgba(126,255,178,0.4);
 }
 
+/* ── Stats Panel ─────────────────────────────────────────────── */
+#stats-panel {
+  width: 100%;
+  background: rgba(5,12,20,0.8);
+  border: 1px solid rgba(126,255,178,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(126,255,178,0.55);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.stats-header:hover {
+  background: rgba(126,255,178,0.05);
+}
+
+.stats-arrow {
+  transition: transform 0.2s;
+}
+
+.stats-arrow.open {
+  transform: rotate(90deg);
+}
+
+#stats-body {
+  padding: 0 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: rgba(160,220,255,0.7);
+  border-bottom: 1px solid rgba(126,255,178,0.06);
+  padding: 3px 0;
+}
+
+.stat-row span:last-child {
+  font-weight: 700;
+  color: #7effb2;
+}
+
 /* ─── Utility ───────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
@@ -376,17 +579,12 @@ html, body {
   animation: life-lost-flash 0.45s ease-out forwards;
 }
 
-/* I-frames (invincibility) — snake flickers */
-@keyframes iframe-flicker {
-  0%, 100% { opacity: 1;    }
-  50%       { opacity: 0.25; }
-}
-
 /* Power-up active badges on HUD */
 #hud-powerups {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .powerup-badge {
@@ -414,19 +612,55 @@ html, body {
   animation: pulse-attack 0.5s ease-in-out infinite alternate;
 }
 
+.powerup-badge.shield {
+  background: rgba(160,216,255,0.15);
+  border: 1px solid rgba(160,216,255,0.55);
+  color: #a0d8ff;
+  text-shadow: 0 0 6px rgba(160,216,255,0.8);
+  animation: pulse-shield 0.8s ease-in-out infinite alternate;
+}
+
+.powerup-badge.ghost {
+  background: rgba(200,160,255,0.15);
+  border: 1px solid rgba(200,160,255,0.5);
+  color: #c8a0ff;
+  text-shadow: 0 0 6px rgba(200,160,255,0.8);
+}
+
+.powerup-badge.mine {
+  background: rgba(255,159,64,0.15);
+  border: 1px solid rgba(255,159,64,0.5);
+  color: #ff9f40;
+  text-shadow: 0 0 6px rgba(255,159,64,0.8);
+  animation: pulse-mine 0.6s ease-in-out infinite alternate;
+}
+
+.powerup-badge.speedboost {
+  background: rgba(255,255,128,0.15);
+  border: 1px solid rgba(255,255,128,0.5);
+  color: #ffff80;
+  text-shadow: 0 0 6px rgba(255,255,128,0.8);
+  animation: pulse-speed 0.3s ease-in-out infinite alternate;
+}
+
 @keyframes pulse-attack {
   from { opacity: 0.75; box-shadow: 0 0 4px rgba(255,80,80,0.3); }
   to   { opacity: 1;    box-shadow: 0 0 12px rgba(255,80,80,0.7); }
 }
 
-/* Magnet food — distinct teal glow */
-.magnet-food-glow {
-  /* drawn on canvas, class just documents the color intent */
+@keyframes pulse-shield {
+  from { box-shadow: 0 0 4px rgba(160,216,255,0.3); }
+  to   { box-shadow: 0 0 14px rgba(160,216,255,0.7); }
 }
 
-/* Attack food — sword / fiery red */
-.attack-food-glow {
-  /* drawn on canvas */
+@keyframes pulse-mine {
+  from { opacity: 0.8; }
+  to   { opacity: 1; box-shadow: 0 0 10px rgba(255,159,64,0.5); }
+}
+
+@keyframes pulse-speed {
+  from { opacity: 0.8; }
+  to   { opacity: 1; box-shadow: 0 0 12px rgba(255,255,128,0.6); }
 }
 
 /* Controls hint additions */
@@ -470,7 +704,10 @@ html, body {
   letter-spacing: 0.04em;
 }
 
-/* ── Lifeline food glow (canvas-drawn, class for documentation) */
-.lifeline-food-glow {
-  /* pink heart orb drawn on canvas */
+/* Victory screen */
+#overlay-title.victory {
+  color: #ffd700;
+  text-shadow:
+    0 0 18px rgba(255,215,0,0.8),
+    0 0 50px rgba(255,215,0,0.4);
 }
