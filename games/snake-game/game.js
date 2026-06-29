@@ -213,12 +213,16 @@ class KillFeed {
   }
 
   draw(ctx, canvasW) {
+    // Offset below minimap: on narrow screens the minimap starts lower
+    const isNarrow = canvasW < 480;
     const x = canvasW - 16;
-    let y = 74;  // below minimap
+    // On narrow screens the minimap is pushed down ~66px from top, so push
+    // kill-feed entries below it (110px map + 8px pad + 66px offset ≈ 190)
+    let y = isNarrow ? 190 : 74;
     ctx.save();
     ctx.textAlign    = 'right';
     ctx.textBaseline = 'top';
-    ctx.font         = 'bold 12px "Segoe UI", system-ui, sans-serif';
+    ctx.font         = `bold ${isNarrow ? 10 : 12}px "Segoe UI", system-ui, sans-serif`;
 
     for (const e of this._entries) {
       const alpha = Math.max(0, 1 - (e.age / this._fadeDuration) * 1.2);
@@ -227,7 +231,7 @@ class KillFeed {
       ctx.shadowBlur   = 6;
       ctx.fillStyle    = e.msg.startsWith('🗡️') ? '#7effb2' : '#ff8888';
       ctx.fillText(e.msg, x, y);
-      y += 20;
+      y += isNarrow ? 16 : 20;
     }
     ctx.globalAlpha = 1;
     ctx.shadowBlur  = 0;
@@ -411,18 +415,20 @@ class AchievementManager {
     this._toasts = this._toasts.filter(t => t.age < t.life);
   }
 
-  draw(ctx, canvasW, canvasH) {
+  draw(ctx, logW, logH) {
     if (this._toasts.length === 0) return;
     ctx.save();
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
 
-    let iy = canvasH - 60 - (this._toasts.length - 1) * 46;
+    // Scale toast width to available screen real estate
+    const toastW = Math.min(320, logW - 32);
+    let iy = logH - 60 - (this._toasts.length - 1) * 46;
     for (const t of this._toasts) {
       const alpha = t.age > t.life - 0.5 ? (t.life - t.age) / 0.5 : 1;
       ctx.globalAlpha = alpha;
 
-      const w = 320, h = 38, x = (canvasW - w) / 2, y = iy - h / 2;
+      const w = toastW, h = 38, x = (logW - w) / 2, y = iy - h / 2;
       ctx.fillStyle   = 'rgba(5,12,20,0.92)';
       ctx.shadowColor = '#ffd04b';
       ctx.shadowBlur  = 16;
@@ -435,8 +441,10 @@ class AchievementManager {
       ctx.shadowBlur  = 0;
 
       ctx.fillStyle = '#ffd04b';
-      ctx.font      = 'bold 13px "Segoe UI", system-ui, sans-serif';
-      ctx.fillText(`🏆 Achievement Unlocked: ${t.name}`, canvasW / 2, iy);
+      // Scale font so long names don't overflow on narrow screens
+      const fontSize = logW < 400 ? 11 : 13;
+      ctx.font      = `bold ${fontSize}px "Segoe UI", system-ui, sans-serif`;
+      ctx.fillText(`🏆 Achievement Unlocked: ${t.name}`, logW / 2, iy);
       iy += 46;
     }
 
@@ -465,7 +473,10 @@ class Mine {
     if (this.expired) return;
     const sx = this.pos.x - camX;
     const sy = this.pos.y - camY;
-    if (sx < -40 || sx > ctx.canvas.width + 40 || sy < -40 || sy > ctx.canvas.height + 40) return;
+    const dpr  = window._game ? window._game._dpr : 1;
+    const logW = ctx.canvas.width  / dpr;
+    const logH = ctx.canvas.height / dpr;
+    if (sx < -40 || sx > logW + 40 || sy < -40 || sy > logH + 40) return;
 
     const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.007);
     const r = this.radius + pulse * 3;
@@ -836,7 +847,11 @@ class Food {
     if (this.expired) return;
     const sx = this.pos.x - camX;
     const sy = this.pos.y - camY;
-    if (sx < -24 || sx > ctx.canvas.width + 24 || sy < -24 || sy > ctx.canvas.height + 24) return;
+    // Use logical dimensions for culling (ctx transform is dpr-scaled)
+    const dpr  = window._game ? window._game._dpr : 1;
+    const logW = ctx.canvas.width  / dpr;
+    const logH = ctx.canvas.height / dpr;
+    if (sx < -24 || sx > logW + 24 || sy < -24 || sy > logH + 24) return;
 
     const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.003 + this.phase);
     const r     = this.radius + pulse * 2;
@@ -1030,10 +1045,13 @@ class ParticlePool {
   }
 
   draw(ctx, camX, camY) {
+    const dpr  = window._game ? window._game._dpr : 1;
+    const logW = ctx.canvas.width  / dpr;
+    const logH = ctx.canvas.height / dpr;
     for (const p of this._pool) {
       if (!p.active) continue;
       const sx = p.x - camX, sy = p.y - camY;
-      if (sx < -20 || sx > ctx.canvas.width + 20 || sy < -20 || sy > ctx.canvas.height + 20) continue;
+      if (sx < -20 || sx > logW + 20 || sy < -20 || sy > logH + 20) continue;
       const t = p.life / p.maxLife;
       ctx.globalAlpha = 1 - t;
       ctx.beginPath();
@@ -1206,10 +1224,14 @@ class Snake {
     const isMulticolour = this.isPlayer && Settings.design === 'multicolour' && !inAttack;
 
     // Body
+    const _dpr  = window._game ? window._game._dpr : 1;
+    const _logW = ctx.canvas.width  / _dpr;
+    const _logH = ctx.canvas.height / _dpr;
+
     if (isMulticolour) {
       for (let i = len - 1; i >= 1; i--) {
         const sx = segs[i].x - camX, sy = segs[i].y - camY;
-        if (sx < -segR * 2 || sx > ctx.canvas.width + segR * 2 || sy < -segR * 2 || sy > ctx.canvas.height + segR * 2) continue;
+        if (sx < -segR * 2 || sx > _logW + segR * 2 || sy < -segR * 2 || sy > _logH + segR * 2) continue;
         ctx.beginPath();
         ctx.arc(sx, sy, segR, 0, Math.PI * 2);
         ctx.fillStyle = MULTICOLOUR_PALETTE[i % MULTICOLOUR_PALETTE.length];
@@ -1219,7 +1241,7 @@ class Snake {
       ctx.beginPath();
       for (let i = len - 1; i >= 1; i--) {
         const sx = segs[i].x - camX, sy = segs[i].y - camY;
-        if (sx < -segR * 2 || sx > ctx.canvas.width + segR * 2 || sy < -segR * 2 || sy > ctx.canvas.height + segR * 2) continue;
+        if (sx < -segR * 2 || sx > _logW + segR * 2 || sy < -segR * 2 || sy > _logH + segR * 2) continue;
         ctx.moveTo(sx + segR, sy);
         ctx.arc(sx, sy, segR, 0, Math.PI * 2);
       }
@@ -1671,6 +1693,12 @@ class Game {
     this.canvas  = document.getElementById('game-canvas');
     this.ctx     = this.canvas.getContext('2d');
 
+    // ── High-DPI / Retina scaling ──────────────────────────────
+    // _dpr: the device pixel ratio we committed to on the last resize.
+    // All coordinate logic (pointer, camera, joystick) continues to use
+    // CSS / logical pixels. Only the backing buffer is scaled up.
+    this._dpr = Math.min(window.devicePixelRatio || 1, 3); // cap at 3× for perf
+
     this.overlay      = document.getElementById('overlay');
     this.scoreDisplay = document.getElementById('score-display');
     this.finalScore   = document.getElementById('final-score');
@@ -1819,13 +1847,51 @@ class Game {
 
   /* ── RESIZE ─────────────────────────────────────────────── */
   _setupResize() {
-    const resize = () => {
-      this.canvas.width  = window.innerWidth;
-      this.canvas.height = window.innerHeight;
+    // _resizeCanvas: sets the canvas *buffer* size to CSS size × dpr so
+    // every pixel in the backing store maps to exactly one physical pixel.
+    // All game-logic coordinates remain in CSS (logical) pixels — we only
+    // scale the ctx transform once after each resize.
+    const _resizeCanvas = () => {
+      // Re-read dpr each time (can change when dragging between monitors)
+      this._dpr = Math.min(window.devicePixelRatio || 1, 3);
+
+      // Logical (CSS) dimensions — what all coordinate math uses
+      const logW = window.innerWidth;
+      const logH = window.innerHeight;
+
+      // Physical buffer dimensions
+      const physW = Math.round(logW * this._dpr);
+      const physH = Math.round(logH * this._dpr);
+
+      // Only reallocate if the buffer size actually changed (avoids
+      // unnecessary work on orientation events that fire multiple times)
+      if (this.canvas.width !== physW || this.canvas.height !== physH) {
+        this.canvas.width  = physW;
+        this.canvas.height = physH;
+      }
+
+      // Scale the ctx so every draw call uses logical pixels
+      this.ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
+
+      // Invalidate the cached background tile so it is regenerated at the
+      // correct logical size after the next render tick
       this._bgTile = null;
     };
-    window.addEventListener('resize', resize);
-    resize();
+
+    // Debounce: orientation changes fire several resize events in quick
+    // succession; wait 120 ms after the last one before reacting.
+    let _resizeTimer = null;
+    const _debouncedResize = () => {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(_resizeCanvas, 120);
+    };
+
+    window.addEventListener('resize', _debouncedResize);
+    // Also listen for explicit orientation-change events (Safari)
+    window.addEventListener('orientationchange', _debouncedResize);
+
+    // Run immediately so the canvas is correctly sized before the first frame
+    _resizeCanvas();
   }
 
   /* ── INPUT ──────────────────────────────────────────────── */
@@ -1843,24 +1909,28 @@ class Game {
     this.canvas.addEventListener('mouseleave', () => { if (this.player) this.player.boosting = false; });
 
     if (isTouchDevice) {
-      const joyEl = document.getElementById('overlay');
-
+      // NOTE: touchstart MUST be { passive: false } so that the browser
+      // does not emit a console warning about "Ignored attempt to cancel
+      // a touchstart event with cancelable=false".  The canvas already has
+      // touch-action:none in CSS which lets us call preventDefault safely.
       this.canvas.addEventListener('touchstart', e => {
+        // Don't intercept taps on the overlay/menu (running guard)
         if (!this.running) return;
+        e.preventDefault(); // prevent click-delay ghost tap on iOS
         const t = e.touches[0];
-        // Start joystick
+        // Start virtual joystick
         this._joystick.active  = true;
         this._joystick.originX = t.clientX;
         this._joystick.originY = t.clientY;
         this._joystick.thumbX  = t.clientX;
         this._joystick.thumbY  = t.clientY;
         this._joystickDir = new Vector2(0, 0);
-        // Still enable boost on second touch
+        // Second finger = boost
         if (e.touches.length > 1 && this.player) this.player.boosting = true;
-      }, { passive: true });
+      }, { passive: false }); // <-- non-passive so preventDefault works
 
       this.canvas.addEventListener('touchmove', e => {
-        e.preventDefault();
+        e.preventDefault(); // suppress scroll / rubber-banding
         if (!this._joystick.active) return;
         const t = e.touches[0];
         const dx = t.clientX - this._joystick.originX;
@@ -1875,13 +1945,23 @@ class Game {
         if (dist > 10) this._joystickDir = new Vector2(nx, ny);
       }, { passive: false });
 
-      this.canvas.addEventListener('touchend', () => {
+      this.canvas.addEventListener('touchend', e => {
+        // All fingers lifted → deactivate joystick and boost
+        if (e.touches.length === 0) {
+          this._joystick.active = false;
+          this._joystickDir = new Vector2(0, 0);
+          if (this.player) this.player.boosting = false;
+        }
+      }, { passive: true });
+
+      this.canvas.addEventListener('touchcancel', () => {
         this._joystick.active = false;
         this._joystickDir = new Vector2(0, 0);
         if (this.player) this.player.boosting = false;
       }, { passive: true });
+
     } else {
-      // Desktop: mouse-based boost
+      // Desktop fallback touch (e.g. Chrome DevTools device emulation)
       this.canvas.addEventListener('touchstart', e => {
         const t = e.touches[0];
         this._pointer.x = t.clientX; this._pointer.y = t.clientY;
@@ -2122,6 +2202,13 @@ class Game {
   _loop(timestamp) {
     if (!this.running) return;
 
+    // Re-apply the DPI scale transform on every frame.
+    // canvas.width changes reset ctx.setTransform to identity, so after a
+    // debounced resize the very next frame would draw at 1× until the next
+    // explicit setTransform call.  Calling it here (cheaply) keeps rendering
+    // crisp regardless of when the resize fires relative to rAF.
+    this.ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
+
     const rawDt = (timestamp - this._lastTime) / 1000;
     const dt    = Math.min(rawDt, 0.1);
     this._lastTime = timestamp;
@@ -2169,10 +2256,13 @@ class Game {
     // AI
     for (let i = 1; i < this.snakes.length; i++) this.snakes[i].update(dt);
 
-    // Camera
+    // Camera — must use LOGICAL pixel dimensions, not canvas.width/height
+    // (canvas.width is now physW = logW × dpr; dividing by dpr gives logW)
     if (this.player.alive) {
-      const targetX = this.player.head.x - this.canvas.width  / 2;
-      const targetY = this.player.head.y - this.canvas.height / 2;
+      const logW = this.canvas.width  / this._dpr;
+      const logH = this.canvas.height / this._dpr;
+      const targetX = this.player.head.x - logW / 2;
+      const targetY = this.player.head.y - logH / 2;
       const camT = Math.min(1, 7 * dt);
       this.camX += (targetX - this.camX) * camT;
       this.camY += (targetY - this.camY) * camT;
@@ -2694,11 +2784,15 @@ class Game {
       const elapsed = ts - startTime;
       const t = Math.min(elapsed / DURATION, 1);
 
+      // Logical dimensions for UI placement
+      const logW = canvas.width  / this._dpr;
+      const logH = canvas.height / this._dpr;
+
       // Redraw last frame (world) then overlay fade
       this._render();
 
       ctx.fillStyle = `rgba(0,0,0,${t * 0.85})`;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, logW, logH);
 
       if (t > 0.3) {
         const textAlpha = Math.min(1, (t - 0.3) / 0.4);
@@ -2706,12 +2800,14 @@ class Game {
         ctx.save();
         ctx.textAlign    = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font         = 'bold 72px "Segoe UI", system-ui, sans-serif';
+        // Scale font relative to screen width so it's readable on all devices
+        const fontSize = Math.max(36, Math.min(72, logW * 0.14));
+        ctx.font         = `bold ${Math.round(fontSize)}px "Segoe UI", system-ui, sans-serif`;
         ctx.globalAlpha  = textAlpha;
         ctx.fillStyle    = '#ff2222';
         ctx.shadowColor  = '#ff0000';
         ctx.shadowBlur   = 30;
-        ctx.fillText('GAME OVER', canvas.width / 2 + glitch, canvas.height / 2);
+        ctx.fillText('GAME OVER', logW / 2 + glitch, logH / 2);
         ctx.restore();
       }
 
@@ -2728,14 +2824,19 @@ class Game {
   /* ── RENDER ─────────────────────────────────────────────── */
   _render() {
     const { ctx, canvas } = this;
+    // Logical (CSS) pixel dimensions — all draw calls use these because
+    // ctx.setTransform(dpr,0,0,dpr,0,0) is in effect from _setupResize.
+    const logW = canvas.width  / this._dpr;
+    const logH = canvas.height / this._dpr;
+
     const shake = this.shake ? this.shake.getOffset() : { x: 0, y: 0 };
 
     ctx.save();
     ctx.translate(shake.x, shake.y);
 
-    ctx.clearRect(-10, -10, canvas.width + 20, canvas.height + 20);
+    ctx.clearRect(-10, -10, logW + 20, logH + 20);
 
-    this._drawBackground();
+    this._drawBackground(logW, logH);
     this._drawWorldBorder();
     this._drawBiomes();
 
@@ -2754,10 +2855,9 @@ class Game {
 
     this.particles.draw(ctx, this.camX, this.camY);
 
-    if (this._mode === 'arena') this._drawArenaPulse();
-
-    this._drawMinimap();
-    if (this.player && this.player.alive) this._drawWallWarning();
+    if (this._mode === 'arena') this._drawArenaPulse(logW, logH);
+    this._drawMinimap(logW, logH);
+    if (this.player && this.player.alive) this._drawWallWarning(logW, logH);
 
     // Joystick
     if (this._joystick && this._joystick.active) this._drawJoystick(ctx);
@@ -2765,9 +2865,9 @@ class Game {
     ctx.restore();
 
     // Canvas-space overlays (not shaken)
-    this.killFeed.draw(ctx, canvas.width);
+    this.killFeed.draw(ctx, logW);
     this.combo.draw(ctx, this.camX, this.camY);
-    this.achievements.draw(ctx, canvas.width, canvas.height);
+    this.achievements.draw(ctx, logW, logH);
   }
 
   _drawJoystick(ctx) {
@@ -2807,17 +2907,17 @@ class Game {
     ctx.restore();
   }
 
-  _drawBackground() {
-    const { ctx, canvas } = this;
+  _drawBackground(logW, logH) {
+    const { ctx } = this;
     ctx.fillStyle = '#050a0f';
-    ctx.fillRect(-10, -10, canvas.width + 20, canvas.height + 20);
+    ctx.fillRect(-10, -10, logW + 20, logH + 20);
 
     const gridSpacing = 40;
     if (!this._bgTile ||
-        this._bgTile.width  !== canvas.width  + gridSpacing * 2 ||
-        this._bgTile.height !== canvas.height + gridSpacing * 2) {
-      const tw = canvas.width + gridSpacing * 2;
-      const th = canvas.height + gridSpacing * 2;
+        this._bgTile.width  !== logW  + gridSpacing * 2 ||
+        this._bgTile.height !== logH + gridSpacing * 2) {
+      const tw = logW  + gridSpacing * 2;
+      const th = logH + gridSpacing * 2;
       const oc  = new OffscreenCanvas(tw, th);
       const oc2 = oc.getContext('2d');
       oc2.fillStyle = 'rgba(80,140,200,0.11)';
@@ -2910,18 +3010,18 @@ class Game {
     ctx.restore();
   }
 
-  _drawArenaPulse() {
-    const { ctx, canvas } = this;
+  _drawArenaPulse(logW, logH) {
+    const { ctx } = this;
     const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.003);
     const alpha = pulse * 0.08;
     ctx.save();
     ctx.fillStyle = `rgba(255,40,40,${alpha.toFixed(3)})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, logW, logH);
     ctx.restore();
   }
 
-  _drawWallWarning() {
-    const { ctx, canvas } = this;
+  _drawWallWarning(logW, logH) {
+    const { ctx } = this;
     if (!this.player.alive) return;
     const W = this._worldW, H = this._worldH;
     const hx = this.player.head.x, hy = this.player.head.y;
@@ -2930,19 +3030,33 @@ class Game {
 
     const intensity = (1 - nearest / DANGER_ZONE_DIST) * 0.5;
     const grad = ctx.createRadialGradient(
-      canvas.width / 2, canvas.height / 2, canvas.height * 0.3,
-      canvas.width / 2, canvas.height / 2, canvas.height * 0.8
+      logW / 2, logH / 2, logH * 0.3,
+      logW / 2, logH / 2, logH * 0.8
     );
     grad.addColorStop(0, 'rgba(255,40,40,0)');
     grad.addColorStop(1, `rgba(255,40,40,${intensity.toFixed(2)})`);
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, logW, logH);
   }
 
-  _drawMinimap() {
-    const { ctx, canvas } = this;
-    const MAP_W = 150, MAP_H = 150, MAP_PAD = 14;
-    const MAP_X = canvas.width - MAP_W - MAP_PAD, MAP_Y = MAP_PAD;
+  _drawMinimap(logW, logH) {
+    const { ctx } = this;
+
+    // ── Responsive minimap sizing ─────────────────────────────
+    // On narrow portrait phones (< 480px wide) shrink the minimap so it
+    // cannot collide with the HUD pill or overflow the right edge.
+    const isNarrow   = logW < 480;
+    const MAP_W      = isNarrow ? 110 : 150;
+    const MAP_H      = isNarrow ? 110 : 150;
+    // Keep minimap clear of the safe-area right edge
+    const safeRight  = 0; // canvas ctx is already in logical coords; CSS safe-area handled by body padding
+    const MAP_PAD    = isNarrow ? 8 : 14;
+    const MAP_X      = logW - MAP_W - MAP_PAD;
+    // Top: push below safe-area inset + HUD height headroom
+    // HUD sits at ~max(10px, safeTop+6px) + ~30px height = ~50px worst case
+    const HUD_CLEARANCE = isNarrow ? 52 : 14;
+    const MAP_Y      = HUD_CLEARANCE + MAP_PAD;
+
     const W = this._worldW, H = this._worldH;
     const SCALE_X = MAP_W / W, SCALE_Y = MAP_H / H;
 
@@ -2974,7 +3088,12 @@ class Game {
       ctx.arc(MAP_X + this.player.head.x * SCALE_X, MAP_Y + this.player.head.y * SCALE_Y, 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur  = 0; ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
-      ctx.strokeRect(MAP_X + this.camX * SCALE_X, MAP_Y + this.camY * SCALE_Y, canvas.width * SCALE_X, canvas.height * SCALE_Y);
+      ctx.strokeRect(
+        MAP_X + this.camX * SCALE_X,
+        MAP_Y + this.camY * SCALE_Y,
+        logW * SCALE_X,
+        logH * SCALE_Y
+      );
     }
 
     ctx.restore();
