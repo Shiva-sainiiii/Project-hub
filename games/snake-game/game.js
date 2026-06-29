@@ -630,17 +630,11 @@ class AudioManager {
     this._nearCooldown = 0;
     this._biteCooldown = 0;
     this._tracks = {
-  bg:        'assets/bgmusic.mp3',
-  eat:       'assets/eat.mp3',
-  panic:     'assets/panic.mp3',
-  gameover:  'assets/gameover.mp3',
-  magnet:    'assets/magnet.mp3',
-  run:       'assets/run.mp3',
-  enemybite: 'assets/enemybite.mp3',
-  nearsnake: 'assets/nearsnake.mp3',
-  kill:      'assets/kill.mp3',
-  lifeline:  'assets/lifeline.mp3',
-};
+      bg: 'bgmusic.mp3', eat: 'eat.mp3', panic: 'panic.mp3',
+      gameover: 'gameover.mp3', magnet: 'magnet.mp3', run: 'run.mp3',
+      enemybite: 'enemybite.mp3', nearsnake: 'nearsnake.mp3',
+      kill: 'kill.mp3', lifeline: 'lifeline.mp3',
+    };
     const unlock = () => {
       this._init();
       window.removeEventListener('click', unlock);
@@ -1420,10 +1414,12 @@ const HYSTERESIS = {
 const AI_PERSONALITIES = ['aggressive', 'coward', 'hunter', 'farmer'];
 
 class AISnake extends Snake {
-  constructor(x, y, bodyColor, headColor, foodGrid, snakes) {
+  constructor(x, y, bodyColor, headColor, foodGrid, snakes, worldW = WORLD_W, worldH = WORLD_H) {
     super(x, y, bodyColor, headColor, 8);
     this.foodGrid = foodGrid;
     this.snakes   = snakes;
+    this.worldW   = worldW;
+    this.worldH   = worldH;
     this.state    = AI_STATE.WANDER;
     this.name     = generateName();
 
@@ -1454,6 +1450,11 @@ class AISnake extends Snake {
   }
 
   _applyPersonality() {
+    const W = this.worldW;
+    // Clamp sense/food radii so they don't exceed the arena
+    const maxSense = Math.min(W * 0.35, 380);
+    const maxFood  = Math.min(W * 0.30, 320);
+
     switch (this.personality) {
       case 'aggressive':
         this.pursueThreshold = 4;
@@ -1466,12 +1467,12 @@ class AISnake extends Snake {
         this.speed = BASE_SPEED * 0.95;
         break;
       case 'hunter':
-        this.SNAKE_SENSE_R = 380;
+        this.SNAKE_SENSE_R = maxSense;
         this.speed = BASE_SPEED * 1.05;
         break;
       case 'farmer':
-        this.FOOD_RADIUS   = 320;
-        this.SNAKE_SENSE_R = 80;
+        this.FOOD_RADIUS   = Math.min(maxFood, 320);
+        this.SNAKE_SENSE_R = Math.min(80, W * 0.08);
         this.pursueThreshold = 999;
         break;
     }
@@ -1629,15 +1630,20 @@ class AISnake extends Snake {
   }
 
   _wallAvoidForce() {
-    const MARGIN_OUTER = 160, MARGIN_INNER = 60;
+    const W = this.worldW, H = this.worldH;
+    // Scale margins to world size — smaller arenas need tighter margins
+    const MARGIN_OUTER = Math.min(160, W * 0.12);
+    const MARGIN_INNER = Math.min(60,  W * 0.04);
     let px = 0, py = 0;
     const hx = this.head.x, hy = this.head.y;
     const push = (dist) => dist < MARGIN_OUTER ? (1 - Math.max(0, (dist - MARGIN_INNER) / (MARGIN_OUTER - MARGIN_INNER))) : 0;
-    px +=  push(hx); px -= push(WORLD_W - hx);
-    py +=  push(hy); py -= push(WORLD_H - hy);
+    px +=  push(hx); px -= push(W - hx);
+    py +=  push(hy); py -= push(H - hy);
     if (px === 0 && py === 0) return null;
     const len = Math.sqrt(px * px + py * py);
-    return new Vector2(px / len, py / len).scale(0.3);
+    // Stronger push in small arenas
+    const strength = W < 1200 ? 0.55 : 0.3;
+    return new Vector2(px / len, py / len).scale(strength);
   }
 }
 
@@ -2017,7 +2023,9 @@ class Game {
     this._worldH = worldH;
     window._GAME_WORLD = { w: worldW, h: worldH };
 
-    this.foodGrid = new SpatialGrid(worldW, worldH, 360);
+    // Cell size: ~80 cells across the world (good balance for any world size)
+    const cellSize = Math.max(60, Math.round(worldW / 80));
+    this.foodGrid = new SpatialGrid(worldW, worldH, cellSize);
     this.snakes   = [];
     this.player   = new PlayerSnake(worldW / 2, worldH / 2);
     this.player.name = getPlayerName();
@@ -2025,9 +2033,11 @@ class Game {
 
     for (let i = 0; i < aiCount; i++) {
       const [body, head] = randomAIPalette();
-      const x = 300 + Math.random() * (worldW - 600);
-      const y = 300 + Math.random() * (worldH - 600);
-      this.snakes.push(new AISnake(x, y, body, head, this.foodGrid, this.snakes));
+      // Use a safe spawn margin relative to world size (min 80px, max 300px)
+      const spawnMargin = Math.max(80, Math.min(300, worldW * 0.1));
+      const x = spawnMargin + Math.random() * (worldW - spawnMargin * 2);
+      const y = spawnMargin + Math.random() * (worldH - spawnMargin * 2);
+      this.snakes.push(new AISnake(x, y, body, head, this.foodGrid, this.snakes, worldW, worldH));
     }
 
     this.foods = [];
@@ -2357,9 +2367,10 @@ class Game {
       for (let i = 1; i < this.snakes.length; i++) {
         if (!this.snakes[i].alive) {
           const [body, head] = randomAIPalette();
-          const x = 300 + Math.random() * (W - 600);
-          const y = 300 + Math.random() * (H - 600);
-          this.snakes[i] = new AISnake(x, y, body, head, this.foodGrid, this.snakes);
+          const spawnMargin = Math.max(80, Math.min(300, W * 0.1));
+          const x = spawnMargin + Math.random() * (W - spawnMargin * 2);
+          const y = spawnMargin + Math.random() * (H - spawnMargin * 2);
+          this.snakes[i] = new AISnake(x, y, body, head, this.foodGrid, this.snakes, W, H);
         }
       }
     }
